@@ -10,8 +10,9 @@ the player REST API (exwave-auth v0.7.0, `/orbit/v1/platforms/:platformId/…`):
   `@exwave/auth/next`. The browser holds one sealed, httpOnly cookie.
 
 Status (2026-11-18): measured against the in-memory mock
-(`scripts/mock-auth.ts`), which follows the plan's contract. The production
-run (Phase 5) still has to confirm every point below against the real API.
+(`scripts/mock-auth.ts`), which follows the plan's contract as exwave-auth
+PR #12 implements it. The production run (Phase 5) still has to confirm every
+point below against the real API.
 
 ## Setup effort
 
@@ -119,43 +120,36 @@ bundled for the browser by `Bun.build` with minification, then gzip level 9
 
 | Minified | Min+gz | Budget |
 | --- | --- | --- |
-| 8.64 KB | **3.55 KB** (3,635 B) | 6 KB |
+| 8.67 KB | **3.55 KB** (3,640 B) | 6 KB |
 
 `scripts/bundle-size.test.ts` fails CI above the budget. The session cookie is
-1,329 B for a typical player and 2,005 B for the largest one the API accepts
+1,365 B for a typical player and 2,041 B for the largest one the API accepts
 (limit 4,096 B, asserted in `packages/auth/src/server/cookie.test.ts`).
 
-## Contract ambiguities
+## Contract questions, answered
 
-Found while building against the plan's contract; the mock picks the option
-in bold.
+Found while building against the plan's contract and answered by the
+player API session in exwave-auth PR #12 (commit `5b27925`, not merged yet).
+The mock and the client now follow these answers; `scripts/mock-auth.test.ts`
+pins them.
 
-1. **`Retry-After` is unreadable in browsers.** Auth's `/orbit/v1` CORS policy
-   has no `Access-Control-Expose-Headers`, so a SPA cannot read the wait on
-   `429 rate_limited`. Either expose `Retry-After`, or add `retry_after` to the
-   body. **The mock exposes the header**; the client handles its absence.
-2. **`players/me` shape.** "`player`" could mean `{player: {...}}` or the
-   player object itself. **The mock wraps it**; the client accepts both.
-3. **`player.id` vs `player.user_id`.** Assumed: `id` is Exwave's player
-   registry ID and `user_id` is the Zitadel user ID (the PAT subject's last
-   part). Confirm, and whether `id` is stable across sign-ins.
-4. **`player_locked` vs a revoked session.** Locking revokes sessions, yet the
-   next refresh must answer `player_locked`. **The mock checks the player's
-   status before the session's revocation.**
-5. **A `redirect_to` outside the allowed origins.** No error code in the plan.
-   **The mock answers `400 invalid_redirect_to`.**
-6. **`password_policy` fields.** Not specified. **The mock uses**
-   `{min_length, has_uppercase, has_lowercase, has_number, has_symbol}`
-   (Zitadel's complexity policy in snake_case).
-7. **`oidc.scopes`** may be an array or a space-separated string; the client
-   accepts both. **The mock sends an array.**
-8. **Password reset confirm on an unverified email.** Does it verify the email
-   (the link reached the inbox) and sign in? **The mock verifies and signs in.**
-9. **Locked player at `verify-email` and `password-reset/confirm`.** **The mock
-   answers `403 player_locked`** after consuming the code.
-10. **Publishable key encoding.** base64url with or without padding, and is a
-    trailing slash on the origin allowed? The decoder accepts both and
-    normalises; Nexus should emit no padding and no slash.
+| # | Question | Answer in PR #12 |
+| --- | --- | --- |
+| 1 | Can browsers read `Retry-After` on `429 rate_limited`? | Yes: `/orbit/v1` CORS exposes it (new in PR #12; Auth v0.6.0 does not). No `retry_after` body field |
+| 2 | `GET players/me` shape | The bare player object, no `{player}` wrapper (the client accepts both) |
+| 3 | `player.id` vs `player.user_id` | `id` is the PAT subject `managed:<platform id>:<user id>`; `user_id` is the Zitadel user ID, the `uid` of email links |
+| 4 | A locked player's refresh, after the lock revoked the session | `403 player_locked` (status checked before revocation and expiry); after an unlock, `401 invalid_refresh_token` |
+| 5 | A `redirect_to` off the allowed origins | `400 invalid_redirect_to`, also when the link would not fit Zitadel's 200-character template |
+| 6 | `password_policy` fields | `{min_length, requires_uppercase, requires_lowercase, requires_number, requires_symbol}` |
+| 7 | `oidc.scopes` | An array |
+| 8 | Reset confirm on an unverified email | Marks the email verified and signs in |
+| 9 | Locked player at verify-email or reset confirm | `403 player_locked`, after the code is used |
+| 10 | Publishable key encoding | Nexus's choice; the decoder accepts padding and a trailing slash, and expects neither |
+
+Also from PR #12: 202 routes answer `{}`; failed sign-ins (10 per 15 minutes
+per login) reset on a success; wrong codes are limited to 10 per 15 minutes
+per user; usernames match `^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$`; Zitadel failures
+answer `502 managed_auth_unavailable`. The mock does the same.
 
 ## Remaining gaps
 

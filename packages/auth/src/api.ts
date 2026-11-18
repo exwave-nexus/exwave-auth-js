@@ -124,7 +124,7 @@ export function createPlayerApi(
         undefined,
         accessToken,
       );
-      // The contract says `player`; accept it bare or wrapped.
+      // Auth answers with the bare player; accept a wrapped one too.
       return toPlayer(data.player ?? data);
     },
   };
@@ -152,10 +152,10 @@ function toConfig(c: Json): PlatformConfig {
     signUpEnabled: c.sign_up_enabled === true,
     passwordPolicy: {
       minLength: policy.min_length as number | undefined,
-      hasUppercase: policy.has_uppercase as boolean | undefined,
-      hasLowercase: policy.has_lowercase as boolean | undefined,
-      hasNumber: policy.has_number as boolean | undefined,
-      hasSymbol: policy.has_symbol as boolean | undefined,
+      requiresUppercase: policy.requires_uppercase as boolean | undefined,
+      requiresLowercase: policy.requires_lowercase as boolean | undefined,
+      requiresNumber: policy.requires_number as boolean | undefined,
+      requiresSymbol: policy.requires_symbol as boolean | undefined,
     },
     allowedRedirectOrigins: (c.allowed_redirect_origins as string[]) ?? [],
     oidc: {

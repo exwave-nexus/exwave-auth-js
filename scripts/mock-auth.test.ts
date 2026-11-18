@@ -309,3 +309,84 @@ describe("server route handler against the mock", () => {
     );
   });
 });
+
+describe("choices exwave-auth PR #12 made (shared notes, player-rest-api-contract.md)", () => {
+  test("config maps Zitadel's requires_* password policy", async () => {
+    const { mock, fetch } = await setup();
+    const config = await client(mock, fetch).getConfig();
+    expect(config.passwordPolicy).toEqual({
+      minLength: 8,
+      requiresUppercase: true,
+      requiresLowercase: true,
+      requiresNumber: true,
+      requiresSymbol: false,
+    });
+    expect(config.oidc.scopes).toContain("openid");
+  });
+
+  test("player.id is the PAT subject, and players/me answers the bare player", async () => {
+    const { mock, fetch } = await setup();
+    const auth = client(mock, fetch);
+    const session = await auth.signIn(PLAYER);
+    expect(session.player.id).toBe(
+      `managed:${mock.platformId}:${session.player.userId}`,
+    );
+    const me = await fetch(
+      `${mock.origin}/orbit/v1/platforms/${mock.platformId}/players/me`,
+      { headers: { authorization: `Bearer ${session.accessToken}` } },
+    );
+    expect(await me.json()).toMatchObject({
+      id: session.player.id,
+      username: "player1",
+    });
+    expect(await auth.getPlayer()).toEqual(session.player);
+  });
+
+  test("a redirect_to off the allowed origins is invalid_redirect_to", async () => {
+    const { mock, fetch } = await setup();
+    const auth = client(mock, fetch);
+    const signUp = (redirectTo: string) =>
+      auth
+        .signUp({
+          email: `r${redirectTo.length}@example.com`,
+          password: "Password123!",
+          displayName: "R",
+          redirectTo,
+        })
+        .catch((e) => e.code);
+    expect(await signUp("https://evil.example/verify")).toBe(
+      "invalid_redirect_to",
+    );
+    expect(await signUp(`http://localhost:5173/${"x".repeat(160)}`)).toBe(
+      "invalid_redirect_to",
+    );
+  });
+
+  test("a successful sign-in clears the failure count", async () => {
+    const { mock, fetch } = await setup();
+    const auth = client(mock, fetch);
+    const wrong = { login: "player1", password: "nope" };
+    for (let i = 0; i < 9; i++) await auth.signIn(wrong).catch(() => {});
+    await auth.signIn(PLAYER);
+    for (let i = 0; i < 9; i++) await auth.signIn(wrong).catch(() => {});
+    expect((await auth.signIn(PLAYER)).player.username).toBe("player1");
+  });
+
+  test("ten wrong codes rate limit the user", async () => {
+    const { mock, fetch } = await setup();
+    const auth = client(mock, fetch);
+    const { userId } = await auth.signUp({
+      email: "codes@example.com",
+      password: "Password123!",
+      displayName: "Codes",
+    });
+    for (let i = 0; i < 10; i++)
+      expect(
+        await auth.verifyEmail({ userId, code: "WRONG1" }).catch((e) => e.code),
+      ).toBe("invalid_code");
+    const code = mock.emails.at(-1)?.code ?? "";
+    expect(await auth.verifyEmail({ userId, code }).catch((e) => e.code)).toBe(
+      "rate_limited",
+    );
+  });
+});

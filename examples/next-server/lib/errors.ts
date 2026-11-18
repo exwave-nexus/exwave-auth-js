@@ -30,6 +30,10 @@ export function describeError(error: unknown): string {
       return "Your session ended. Sign in again.";
     case "network_error":
       return "Can't reach Exwave. Check your connection.";
+    case "invalid_redirect_to":
+      return "This site's address isn't in the platform's redirect URLs in Nexus.";
+    case "managed_auth_unavailable":
+      return "Sign-in is unavailable right now. Try again in a moment.";
     case "managed_auth_not_enabled":
       return "Managed auth is off for this platform in Nexus.";
     case "invalid_publishable_key":

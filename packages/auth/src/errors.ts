@@ -12,6 +12,8 @@ export type ExwaveAuthErrorCode =
   | "rate_limited"
   | "invalid_refresh_token"
   | "invalid_request"
+  | "invalid_redirect_to"
+  | "managed_auth_unavailable"
   | "unauthorized"
   | "unavailable"
   // Raised by this library, never by the API.

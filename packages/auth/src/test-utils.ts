@@ -11,7 +11,7 @@ export const PUBLISHABLE_KEY = encodePublishableKey({
   platformId: PLATFORM_ID,
 });
 export const PLAYER: ApiPlayer = {
-  id: "8b7f6d0e-1111-4222-8333-944455556666",
+  id: "managed:6f1c2a10-5a3e-4c2b-9d4e-0a1b2c3d4e5f:312345678901234567",
   user_id: "312345678901234567",
   email: "player@example.com",
   email_verified: true,
@@ -196,7 +196,7 @@ export function fakeApi(clock: FakeClock) {
       case "players/sign-out":
         return new Response(null, { status: 204 });
       case "players/me":
-        return Response.json({ player: PLAYER });
+        return Response.json(PLAYER);
       default:
         return Response.json({ error: "not_found" }, { status: 404 });
     }

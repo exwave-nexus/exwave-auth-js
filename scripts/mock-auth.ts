@@ -38,7 +38,6 @@ const CODE_TTL_MS = 60 * 60_000;
 
 interface User {
   userId: string;
-  playerId: string;
   email: string;
   emailVerified: boolean;
   displayName: string;
@@ -101,7 +100,7 @@ const CORS = {
   "access-control-allow-headers": "Content-Type, Authorization",
   "access-control-allow-methods": "GET, POST, OPTIONS",
   "access-control-max-age": "600",
-  // Not in Auth's CORS policy today; without it browsers cannot read Retry-After.
+  // As Auth's /orbit/v1 policy (PR #12): browsers can read Retry-After.
   "access-control-expose-headers": "Retry-After",
 };
 
@@ -155,11 +154,10 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
   const emails: SentEmail[] = [];
   const organizationId = "290000000000000001";
 
-  function addUser(input: Omit<User, "userId" | "playerId" | "status">): User {
+  function addUser(input: Omit<User, "userId" | "status">): User {
     const user: User = {
       ...input,
       userId: newUserId(),
-      playerId: randomUUID(),
       status: "active",
     };
     users.set(user.userId, user);
@@ -179,8 +177,11 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
       (u) => u.username?.toLowerCase() === login.toLowerCase(),
     );
 
+  // Auth's player ID is the PAT subject.
+  const subject = (u: User) =>
+    `managed:${platformId}:${encodeURIComponent(u.userId)}`;
   const apiPlayer = (u: User) => ({
-    id: u.playerId,
+    id: subject(u),
     user_id: u.userId,
     email: u.email,
     email_verified: u.emailVerified,
@@ -200,7 +201,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
       .setProtectedHeader({ alg: "EdDSA", kid, typ: "JWT" })
       .setIssuer(PAT_ISSUER)
       .setAudience(PAT_AUDIENCE)
-      .setSubject(`managed:${platformId}:${encodeURIComponent(user.userId)}`)
+      .setSubject(subject(user))
       .setIssuedAt(iat)
       .setExpirationTime(iat + settings.patTtlSeconds)
       .sign(privateKey);
@@ -248,7 +249,13 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
     if (typeof value !== "string") return "invalid";
     try {
       const url = new URL(value);
-      return allowedOrigins.includes(url.origin) ? url : "invalid";
+      // Zitadel's link template holds 200 characters, placeholders included.
+      const template = `${url.href}?exwave_verify={{.Code}}&uid={{.UserID}}`;
+      const ok =
+        (url.protocol === "http:" || url.protocol === "https:") &&
+        allowedOrigins.includes(url.origin) &&
+        template.length <= 200;
+      return ok ? url : "invalid";
     } catch {
       return "invalid";
     }
@@ -302,6 +309,14 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
     return Math.ceil(((list[0] ?? now()) + FAILURE_WINDOW_MS - now()) / 1000);
   }
 
+  // Wrong codes: 10 per 15 minutes per user, like failed sign-ins.
+  function codeLimited(userId: unknown) {
+    const wait = retryAfter(`code:${String(userId)}`);
+    return wait > 0
+      ? error("rate_limited", 429, { "retry-after": String(wait) })
+      : null;
+  }
+
   const str = (v: unknown, max = 256) =>
     typeof v === "string" && v.length > 0 && v.length <= max ? v : null;
 
@@ -319,10 +334,10 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
             sign_up_enabled: settings.signUpEnabled,
             password_policy: {
               min_length: 8,
-              has_uppercase: true,
-              has_lowercase: true,
-              has_number: true,
-              has_symbol: false,
+              requires_uppercase: true,
+              requires_lowercase: true,
+              requires_number: true,
+              requires_symbol: false,
             },
             allowed_redirect_origins: allowedOrigins,
             oidc: {
@@ -348,7 +363,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
           return error("invalid_request", 400);
         if (
           body.username !== undefined &&
-          !/^[a-z0-9_.-]{3,32}$/i.test(username ?? "")
+          !/^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$/.test(username ?? "")
         )
           return error("invalid_request", 400);
         if (target === "invalid") return error("invalid_redirect_to", 400);
@@ -369,8 +384,12 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
 
       case "POST players/verify-email": {
         const user = users.get(String(body.user_id));
-        if (!user || !checkCode(user, "verifyCode", body.code))
+        const limited = codeLimited(body.user_id);
+        if (limited) return limited;
+        if (!user || !checkCode(user, "verifyCode", body.code)) {
+          hitFailure(`code:${String(body.user_id)}`);
           return error("invalid_code", 400);
+        }
         user.emailVerified = true;
         user.verifyCode = undefined;
         if (user.status === "locked") return error("player_locked", 403);
@@ -383,7 +402,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
         const user = findByEmail(String(body.email ?? ""));
         if (user && !user.emailVerified)
           sendEmail(user, "verify_email", target);
-        return empty(202);
+        return json({}, 202);
       }
 
       case "POST players/sign-in": {
@@ -399,6 +418,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
           hitFailure(key);
           return error("invalid_credentials", 401);
         }
+        failures.delete(key);
         if (user.status === "locked") return error("player_locked", 403);
         if (!user.emailVerified) return error("email_not_verified", 403);
         return startSession(user);
@@ -467,14 +487,18 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
         if (target === "invalid") return error("invalid_redirect_to", 400);
         const user = findByEmail(String(body.email ?? ""));
         if (user) sendEmail(user, "password_reset", target);
-        return empty(202);
+        return json({}, 202);
       }
 
       case "POST players/password-reset/confirm": {
         const user = users.get(String(body.user_id));
         const password = str(body.password, 128);
-        if (!user || !checkCode(user, "resetCode", body.code))
+        const limited = codeLimited(body.user_id);
+        if (limited) return limited;
+        if (!user || !checkCode(user, "resetCode", body.code)) {
+          hitFailure(`code:${String(body.user_id)}`);
           return error("invalid_code", 400);
+        }
         if (!password || weakPassword(password))
           return error("weak_password", 422);
         user.password = password;
@@ -500,7 +524,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
           );
           const user = users.get(userId);
           if (!user || payload.project_id !== platformId) throw new Error();
-          return json({ player: apiPlayer(user) });
+          return json(apiPlayer(user));
         } catch {
           return error("unauthorized", 401);
         }

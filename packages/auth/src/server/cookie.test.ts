@@ -36,7 +36,7 @@ async function session(overrides: Partial<ServerSession["player"]> = {}) {
     accessToken: await realisticPat(),
     expiresAt: Date.now() + 900_000,
     player: {
-      id: crypto.randomUUID(),
+      id: `managed:${PLATFORM}:${"3".repeat(18)}`,
       userId: "3".repeat(18),
       email: "player@example.com",
       emailVerified: true,

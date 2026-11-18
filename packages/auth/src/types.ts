@@ -1,8 +1,8 @@
 /** A player, as the player API describes them, in camelCase. */
 export interface Player {
-  /** Exwave's player ID. */
+  /** Exwave's player ID: the PAT subject, `managed:<platform id>:<user id>`. */
   id: string;
-  /** The identity provider's user ID; it is the last part of the PAT subject. */
+  /** The identity provider's (Zitadel) user ID: the `uid` in email links. */
   userId: string;
   email: string;
   emailVerified: boolean;
@@ -20,10 +20,10 @@ export interface Session {
 
 export interface PasswordPolicy {
   minLength?: number;
-  hasUppercase?: boolean;
-  hasLowercase?: boolean;
-  hasNumber?: boolean;
-  hasSymbol?: boolean;
+  requiresUppercase?: boolean;
+  requiresLowercase?: boolean;
+  requiresNumber?: boolean;
+  requiresSymbol?: boolean;
 }
 
 export interface PlatformConfig {
