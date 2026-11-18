@@ -1,11 +1,13 @@
 import { useExwave } from "@exwave/auth/react";
 import { useEffect, useState } from "react";
 import { describeError } from "../errors";
+import { PasswordField, usePasswordPolicy } from "../password-field";
 import { Link, navigate } from "../router";
 import { field, secret, useAction } from "../use-action";
 
 export function SignUpPage() {
   const { auth } = useExwave();
+  const policy = usePasswordPolicy();
   const [email, setEmail] = useState("");
   const signUp = useAction(async (data) => {
     setEmail(field(data, "email"));
@@ -16,7 +18,7 @@ export function SignUpPage() {
       password: secret(data, "password"),
       redirectTo: `${location.origin}/verify`,
     });
-  });
+  }, policy);
 
   if (signUp.done) return <CheckEmail email={email} />;
   return (
@@ -44,16 +46,7 @@ export function SignUpPage() {
             pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,31}"
           />
         </label>
-        <label>
-          Password
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            required
-          />
-        </label>
+        <PasswordField label="Password" policy={policy} />
         {signUp.message && <p className="error">{signUp.message}</p>}
         <button type="submit" disabled={signUp.pending}>
           Sign up

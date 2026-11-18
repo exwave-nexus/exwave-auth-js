@@ -76,6 +76,54 @@ session at its next refresh in both setups.
 - An idle tab does not refresh at all; the next request does. Sessions last
   30 days idle.
 
+## Password rules
+
+Added after the production run, where three sign-ups in a row got
+`422 weak_password` (verified against the mock; not yet run in production).
+
+- `GET config` carries the policy. The core's `checkPassword(password,
+  policy)` checks it the way Auth does before answering `weak_password`: the
+  length in code points, and Zitadel's ASCII classes (a symbol is anything but
+  `A-Za-z0-9`). `passwordRules(policy)` lists the rules it turns on.
+- Both examples list the rules under the password field on sign-up and
+  password reset, tick them off as the player types, and block the submit
+  (native validation through `setCustomValidity`) until they pass.
+- Auth answers `weak_password` with no detail, so on a 422 the library reads
+  the policy again and sets `error.failedRules` (`["symbol"]`). The examples
+  say "Your password needs a symbol (like ! or #)."; the route handler passes
+  `failedRules` on in its error body.
+- The mock now uses Zitadel's default policy (8 characters, upper case, lower
+  case, a number, a symbol), the one new production platforms get, and checks
+  it before the email lookup and before the reset code, as Auth does.
+
+## Why a session ended
+
+| Reason | When |
+| --- | --- |
+| `player_locked` | A refresh answered `403 player_locked` (Nexus → Players → Lock) |
+| `invalid_refresh_token` | A refresh answered `401`: sign out everywhere or a password reset on another device, a replayed token, or expiry |
+| `signed_out_everywhere` | The player signed out everywhere from this browser |
+| `signed_out` | The player signed out here |
+
+- **SPA:** `onAuthStateChange` passes the reason with `SIGNED_OUT`, and with
+  `INITIAL_SESSION` when the session ended while loading or in the last
+  5 minutes; `useExwave().signOutReason` holds it. Ending a session now leaves
+  `{ended, at}` in storage where the refresh token was, so every tab gets the
+  same reason whichever news arrives first: the `storage` event, the
+  BroadcastChannel message, or the stored entry a tab reads after waiting on
+  the lock. Before, the reason was lost on a reload (the production case: the
+  load-time refresh ended the session before any listener) and in other tabs
+  (the `storage` event beat the channel's message and said `signed_out`).
+- **Server:** an ended session's cookie is replaced by
+  `exwave_session_signed_out=<reason>` (httpOnly, `Max-Age=300`, nothing
+  secret), set by `proxy.ts`, the route handler and Server Functions; a new
+  sign-in clears it. `exwave.getSignOutReason()` reads it in a Server
+  Component, and `GET /api/exwave/session` returns it as `signOutReason`.
+- Both sign-in pages show it: "This account was locked, so you were signed
+  out." for a lock, "Your session ended: you signed out everywhere or changed
+  your password on another device, or it expired." for a `401`, and a short
+  confirmation for the player's own sign-out.
+
 ## How a game on the page gets a PAT
 
 - **SPA:** the game's JS glue calls `auth.getPlayerAccessToken()`, which always
@@ -115,13 +163,14 @@ Takeaways:
 
 ## Core bundle size
 
-`@exwave/auth` (the `.` entry: client, publishable key, errors, storage),
+`@exwave/auth` (the `.` entry: client, publishable key, errors, storage,
+password rules),
 bundled for the browser by `Bun.build` with minification, then gzip level 9
 (`bun run size`):
 
 | Minified | Min+gz | Budget |
 | --- | --- | --- |
-| 8.67 KB | **3.55 KB** (3,640 B) | 6 KB |
+| 9.57 KB | **3.91 KB** (3,999 B) | 6 KB |
 
 `scripts/bundle-size.test.ts` fails CI above the budget. The session cookie is
 1,365 B for a typical player and 2,041 B for the largest one the API accepts
@@ -205,9 +254,10 @@ browser:
 - **Password policy.** The default requires a symbol. The first sign-up
   attempts got `422 weak_password` three times before one passed. The examples
   should show `password_policy` from `GET config` next to the field, and say
-  which rule failed.
+  which rule failed. Since fixed: see [Password rules](#password-rules).
 - **Unexplained sign-out.** The SPA, not only Next.js, signs a locked player
-  out without saying why.
+  out without saying why. Since fixed: see
+  [Why a session ended](#why-a-session-ended).
 - **Stale status in Nexus.** After Unlock, the Players table showed "Locked"
   until a reload, although the toast said "Player unlocked".
 - **No confirmation for Lock.** Lock acts at once. That is acceptable because
@@ -226,11 +276,6 @@ browser:
 ## Remaining gaps
 
 - Prebuilt, themeable forms (Clerk and Neon ship them).
-- Neither example can tell the player why a session ended (locked vs
-  expired or signed out elsewhere): the SPA drops to sign-in, and the Next.js
-  proxy clears the cookie and redirects. The refresh answer already says
-  `player_locked`; surface it (an event reason in the SPA, a short-lived
-  "signed out because" cookie in Next.js).
 - A new SPA tab refreshes once instead of asking an open tab for its PAT.
 - `@exwave/auth` exports TypeScript sources; publishing needs `exports` to point
   at `dist/` (the build already emits ESM and `.d.ts`).

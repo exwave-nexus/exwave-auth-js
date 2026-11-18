@@ -1,8 +1,13 @@
+import type { PasswordPolicy } from "@exwave/auth";
 import { type FormEvent, useState } from "react";
 import { describeError } from "./errors";
 
 /** Runs a form action, with a pending flag and the error to show. */
-export function useAction<T>(action: (data: FormData) => Promise<T>) {
+export function useAction<T>(
+  action: (data: FormData) => Promise<T>,
+  /** Lets a weak-password message say how many characters. */
+  policy?: PasswordPolicy | null,
+) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [result, setResult] = useState<T | null>(null);
@@ -24,7 +29,7 @@ export function useAction<T>(action: (data: FormData) => Promise<T>) {
   return {
     pending,
     error,
-    message: error ? describeError(error) : null,
+    message: error ? describeError(error, policy) : null,
     result,
     /** The last submission succeeded. */
     done,

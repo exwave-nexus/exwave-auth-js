@@ -1,3 +1,5 @@
+import type { PasswordRule } from "./password";
+
 /** Error codes the Exwave player API answers with, plus the client's own. */
 export type ExwaveAuthErrorCode =
   | "managed_auth_not_enabled"
@@ -31,17 +33,25 @@ export class ExwaveAuthError extends Error {
   readonly status: number;
   /** Seconds to wait, from `Retry-After`, when the API rate limits. */
   readonly retryAfter: number | undefined;
+  /**
+   * On `weak_password`: the policy rules the password breaks, checked against
+   * the platform's config. Empty when none could be named (the API answers
+   * with the code alone).
+   */
+  readonly failedRules: PasswordRule[] | undefined;
 
   constructor(
     code: ExwaveAuthErrorCode | (string & {}),
     status = 0,
     retryAfter?: number,
+    failedRules?: PasswordRule[],
   ) {
     super(code);
     this.name = "ExwaveAuthError";
     this.code = code;
     this.status = status;
     this.retryAfter = retryAfter;
+    this.failedRules = failedRules;
   }
 }
 

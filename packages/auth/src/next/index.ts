@@ -1,6 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-import { REFRESH_MARGIN_MS } from "../client";
+import { REFRESH_MARGIN_MS, type SignOutReason } from "../client";
 import {
   COOKIE_MAX_AGE_SECONDS,
   createExwaveServerAuth,
@@ -8,19 +8,23 @@ import {
   type ExwaveServerAuthOptions,
   handleAuthRequest,
   isSecureRequest,
+  isSignOutReason,
   type RefreshResult,
   type ServerSession,
+  SIGN_OUT_REASON_MAX_AGE_SECONDS,
 } from "../server";
 import type {
   CodeInput,
   EmailInput,
   PasswordResetConfirmInput,
+  PlatformConfig,
   Player,
   SignInInput,
   SignUpInput,
   SignUpResult,
 } from "../types";
 
+export type { SignOutReason } from "../client";
 export { ExwaveAuthError, isExwaveAuthError } from "../errors";
 
 export interface ExwaveNextOptions extends Partial<ExwaveServerAuthOptions> {
@@ -91,16 +95,26 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
     return server().unseal(jar.get(server().cookieName)?.value);
   }
 
-  // Only Server Functions and Route Handlers can set cookies.
-  async function persist(session: ServerSession | null) {
+  // Only Server Functions and Route Handlers can set cookies. An ended
+  // session leaves its reason for the sign-in page; a new one clears it.
+  async function persist(
+    session: ServerSession | null,
+    reason?: SignOutReason,
+  ) {
     const jar = await cookies();
-    if (session)
-      jar.set(
-        server().cookieName,
-        await server().seal(session),
-        await cookieOptions(),
-      );
-    else jar.delete(server().cookieName);
+    const { cookieName, reasonCookieName } = server();
+    const options = await cookieOptions();
+    if (session) {
+      jar.set(cookieName, await server().seal(session), options);
+      if (jar.has(reasonCookieName)) jar.delete(reasonCookieName);
+      return;
+    }
+    jar.delete(cookieName);
+    if (reason)
+      jar.set(reasonCookieName, reason, {
+        ...options,
+        maxAge: SIGN_OUT_REASON_MAX_AGE_SECONDS,
+      });
   }
 
   async function canWrite(jar: CookieStore, value: string): Promise<boolean> {
@@ -139,6 +153,22 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
       return (await readSession())?.player ?? null;
     },
 
+    /**
+     * Why the last session in this browser ended, for the sign-in page:
+     * `player_locked`, `invalid_refresh_token` (ended elsewhere or expired),
+     * `signed_out_everywhere` or `signed_out`. `null` after 5 minutes or a new
+     * sign-in. Safe in Server Components.
+     */
+    async getSignOutReason(): Promise<SignOutReason | null> {
+      const value = (await cookies()).get(server().reasonCookieName)?.value;
+      return isSignOutReason(value) ? value : null;
+    },
+
+    /** The platform's config, such as `passwordPolicy` for sign-up forms. Cached for 60 s. */
+    async getConfig(): Promise<PlatformConfig> {
+      return server().getConfig();
+    },
+
     async getSession(): Promise<NextSession | null> {
       const session = await readSession();
       if (!session) return null;
@@ -168,8 +198,8 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
       } catch {
         return session.expiresAt > now ? session.accessToken : null;
       }
-      if (result.cookie === "write" || result.cookie === "clear")
-        await persist(result.session);
+      if (result.cookie === "write") await persist(result.session);
+      if (result.cookie === "clear") await persist(null, result.reason);
       return result.session?.accessToken ?? null;
     },
 
@@ -207,21 +237,27 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
     },
     async signOut({ everywhere = false } = {}) {
       const session = await readSession();
+      let reason: SignOutReason = "signed_out";
       try {
-        if (session) await server().signOut(session, { everywhere });
+        if (session) {
+          await server().signOut(session, { everywhere });
+          if (everywhere) reason = "signed_out_everywhere";
+        }
       } catch (error) {
         if (everywhere) throw error;
       } finally {
-        await persist(null);
+        await persist(null, reason);
       }
     },
 
     /**
      * For `proxy.ts`: refreshes a session whose PAT has under 60 s left, so
      * pages render with a fresh PAT and the browser gets the rotated cookie.
+     * A session that ended (locked, signed out elsewhere, expired) loses its
+     * cookie and leaves the reason for `getSignOutReason()`.
      */
     async proxy(request: NextRequest): Promise<NextResponse> {
-      const name = server().cookieName;
+      const { cookieName: name, reasonCookieName } = server();
       const value = request.cookies.get(name)?.value;
       if (!value) return NextResponse.next();
       const session = await server().unseal(value);
@@ -238,22 +274,31 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
       const sealed = result?.session
         ? await server().seal(result.session)
         : null;
-      // Hand the fresh session to this render through the request cookies.
+      const reason = result?.cookie === "clear" ? result.reason : null;
+      // Hand the fresh session (or the reason) to this render through the request cookies.
       if (sealed) request.cookies.set(name, sealed);
       else request.cookies.delete(name);
+      if (reason) request.cookies.set(reasonCookieName, reason);
       const response = NextResponse.next({
         request: { headers: request.headers },
       });
-      const secure = isSecureRequest(request.url);
+      const options = {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: isSecureRequest(request.url),
+        path: "/",
+      } as const;
       if (sealed && result?.cookie === "write")
         response.cookies.set(name, sealed, {
-          httpOnly: true,
-          sameSite: "lax",
-          secure,
-          path: "/",
+          ...options,
           maxAge: COOKIE_MAX_AGE_SECONDS,
         });
       else if (!sealed) response.cookies.delete(name);
+      if (reason)
+        response.cookies.set(reasonCookieName, reason, {
+          ...options,
+          maxAge: SIGN_OUT_REASON_MAX_AGE_SECONDS,
+        });
       return response;
     },
   };

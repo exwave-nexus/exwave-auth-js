@@ -26,7 +26,11 @@ export interface ExwaveContextValue {
   player: Player | null;
   /** The last auth event, such as `TOKEN_REFRESHED`. */
   event: AuthChangeEvent | null;
-  /** Why the player was last signed out, such as `player_locked`. */
+  /**
+   * Why the player is signed out, such as `player_locked`: set by `SIGNED_OUT`,
+   * or on load when the session ended in the last 5 minutes. `null` while
+   * signed in.
+   */
   signOutReason: SignOutReason | null;
 }
 
@@ -51,17 +55,13 @@ export function ExwaveProvider({ children, ...props }: ExwaveProviderProps) {
   useEffect(
     () =>
       auth.onAuthStateChange((event, session, info) =>
-        setState((previous) => ({
+        setState({
           isLoaded: true,
           session,
           event,
-          signOutReason:
-            event === "SIGNED_OUT"
-              ? (info.reason ?? null)
-              : event === "SIGNED_IN"
-                ? null
-                : previous.signOutReason,
-        })),
+          // INITIAL_SESSION carries it too, when a reload found the session ended.
+          signOutReason: info.reason ?? null,
+        }),
       ),
     [auth],
   );
