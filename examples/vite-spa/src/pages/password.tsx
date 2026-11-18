@@ -1,6 +1,7 @@
 import type { EmailLink } from "@exwave/auth";
 import { useExwave } from "@exwave/auth/react";
 import { useEffect, useState } from "react";
+import { PasswordField, usePasswordPolicy } from "../password-field";
 import { Link, navigate } from "../router";
 import { field, secret, useAction } from "../use-action";
 
@@ -42,6 +43,7 @@ export function ForgotPasswordPage() {
 /** The reset link lands here: choose a new password, then you're signed in. */
 export function ResetPasswordPage() {
   const { auth } = useExwave();
+  const policy = usePasswordPolicy();
   const [link, setLink] = useState<EmailLink | null | undefined>(undefined);
   useEffect(() => {
     auth.handleEmailLink().then(setLink, () => setLink(null));
@@ -54,7 +56,7 @@ export function ResetPasswordPage() {
       password: secret(data, "password"),
     });
     navigate("/account", { replace: true });
-  });
+  }, policy);
 
   if (link === undefined) return null;
   if (link?.type !== "password_reset")
@@ -71,16 +73,7 @@ export function ResetPasswordPage() {
       <h1>Choose a new password</h1>
       <p className="muted">This signs you out everywhere else.</p>
       <form onSubmit={confirm.onSubmit}>
-        <label>
-          New password
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            required
-          />
-        </label>
+        <PasswordField label="New password" policy={policy} />
         {confirm.message && <p className="error">{confirm.message}</p>}
         <button type="submit" disabled={confirm.pending}>
           Save and sign in

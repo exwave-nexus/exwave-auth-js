@@ -1,5 +1,6 @@
 "use client";
 
+import type { PasswordPolicy } from "@exwave/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
@@ -13,10 +14,11 @@ import {
   signUpAction,
   verifyEmailAction,
 } from "./actions";
+import { PasswordField } from "./password-field";
 
 const empty: FormState = {};
 
-export function SignUpForm() {
+export function SignUpForm({ policy }: { policy: PasswordPolicy | null }) {
   const [state, action, pending] = useActionState(signUpAction, empty);
   if (state.done && state.email) return <CheckEmail email={state.email} />;
   return (
@@ -44,16 +46,7 @@ export function SignUpForm() {
             pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,31}"
           />
         </label>
-        <label>
-          Password
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            required
-          />
-        </label>
+        <PasswordField label="Password" policy={policy} />
         {state.error && <p className="error">{state.error}</p>}
         <button type="submit" disabled={pending}>
           Sign up
@@ -132,13 +125,23 @@ export function VerifyEmail({
   );
 }
 
-export function SignInForm() {
+export function SignInForm({
+  signedOut,
+}: {
+  /** Why the last session ended, from `exwave.getSignOutReason()`. */
+  signedOut: { text: string; tone: string } | null;
+}) {
   const [state, action, pending] = useActionState(signInAction, empty);
   if (state.code === "email_not_verified" && state.email)
     return <CheckEmail email={state.email} unverified />;
   return (
     <section className="card">
       <h1>Sign in</h1>
+      {signedOut && (
+        <p className={`notice ${signedOut.tone}`} role="status">
+          {signedOut.text}
+        </p>
+      )}
       <form action={action}>
         <label>
           Email or username
@@ -198,9 +201,11 @@ export function ForgotPasswordForm() {
 export function ResetPasswordForm({
   userId,
   code,
+  policy,
 }: {
   userId: string;
   code: string;
+  policy: PasswordPolicy | null;
 }) {
   const [state, action, pending] = useActionState(resetPasswordAction, empty);
   return (
@@ -210,16 +215,7 @@ export function ResetPasswordForm({
       <form action={action}>
         <input type="hidden" name="userId" value={userId} />
         <input type="hidden" name="code" value={code} />
-        <label>
-          New password
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            required
-          />
-        </label>
+        <PasswordField label="New password" policy={policy} />
         {state.error && <p className="error">{state.error}</p>}
         <button type="submit" disabled={pending}>
           Save and sign in

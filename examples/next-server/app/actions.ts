@@ -23,10 +23,13 @@ async function attempt(run: () => Promise<unknown>): Promise<FormState | null> {
     await run();
     return null;
   } catch (error) {
-    return {
-      error: describeError(error),
-      code: isExwaveAuthError(error) ? error.code : undefined,
-    };
+    const code = isExwaveAuthError(error) ? error.code : undefined;
+    // `failedRules` names what a weak password lacks; the policy adds the length.
+    const policy =
+      code === "weak_password"
+        ? (await exwave.getConfig().catch(() => null))?.passwordPolicy
+        : undefined;
+    return { error: describeError(error, policy), code };
   }
 }
 

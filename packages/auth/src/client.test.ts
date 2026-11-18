@@ -3,6 +3,7 @@ import {
   type AuthChangeEvent,
   createExwaveAuth,
   type ExwaveAuthOptions,
+  SIGN_OUT_REASON_TTL_MS,
   type SignOutReason,
 } from "./client";
 import { ExwaveAuthError } from "./errors";
@@ -51,8 +52,21 @@ function record(auth: ReturnType<typeof createExwaveAuth>) {
 
 const stored = async (storage: StorageAdapter) =>
   JSON.parse((await storage.getItem(KEY)) ?? "null") as {
-    refreshToken: string;
+    refreshToken?: string;
+    ended?: SignOutReason;
+    at?: number;
   } | null;
+
+// Zitadel's default policy, as GET config answers it.
+const POLICY = {
+  min_length: 8,
+  requires_uppercase: true,
+  requires_lowercase: true,
+  requires_number: true,
+  requires_symbol: true,
+};
+const config = () =>
+  Response.json({ platform_id: PLATFORM_ID, password_policy: POLICY });
 
 describe("refresh scheduling", () => {
   test("refreshes 60 s before the PAT expires, then again for the next one", async () => {
@@ -235,13 +249,117 @@ describe("ended sessions", () => {
       expect(failure.code).toBe(code);
       expect(failure.status).toBe(status);
       expect(await auth.getSession()).toBeNull();
-      expect(await storage.getItem(KEY)).toBeNull();
+      // The refresh token is gone; only the reason stays, for other tabs.
+      expect(await stored(storage)).toEqual({ ended: code, at: clock.now() });
       expect(events.at(-1)).toEqual({
         event: "SIGNED_OUT",
         session: null,
         reason: code,
       });
     });
+
+  test("a reload that finds the player locked reports why on INITIAL_SESSION", async () => {
+    // Production: lock in Nexus, reload, and the SPA dropped to sign-in silently.
+    const { clock, api, storage } = setup();
+    await storage.setItem(
+      KEY,
+      JSON.stringify({ refreshToken: "exw_rt_saved", player: { id: "p" } }),
+    );
+    api.handlers.set("players/token/refresh", () =>
+      Response.json({ error: "player_locked" }, { status: 403 }),
+    );
+    const auth = createExwaveAuth({
+      publishableKey: PUBLISHABLE_KEY,
+      storage,
+      fetch: api.fetch,
+      runtime: runtime(clock),
+    });
+    const events = record(auth);
+    await flush();
+    expect(events).toEqual([
+      { event: "INITIAL_SESSION", session: null, reason: "player_locked" },
+    ]);
+    // Subscribing later still says why.
+    const later = record(auth);
+    await flush();
+    expect(later[0]?.reason).toBe("player_locked");
+  });
+
+  test("a new tab reports a reason from the last 5 minutes, then forgets it", async () => {
+    const { clock, api, auth, storage } = setup({ autoRefresh: false });
+    await auth.signIn(SIGN_IN);
+    api.handlers.set("players/token/refresh", () =>
+      Response.json({ error: "invalid_refresh_token" }, { status: 401 }),
+    );
+    clock.current += 900_000;
+    await auth.getPlayerAccessToken().catch(() => undefined);
+    const open = () =>
+      record(
+        createExwaveAuth({
+          publishableKey: PUBLISHABLE_KEY,
+          storage,
+          fetch: api.fetch,
+          runtime: runtime(clock),
+        }),
+      );
+
+    clock.current += SIGN_OUT_REASON_TTL_MS - 1;
+    const soon = open();
+    await flush();
+    expect(soon).toEqual([
+      {
+        event: "INITIAL_SESSION",
+        session: null,
+        reason: "invalid_refresh_token",
+      },
+    ]);
+
+    clock.current += 1;
+    const late = open();
+    await flush();
+    expect(late).toEqual([{ event: "INITIAL_SESSION", session: null }]);
+  });
+
+  test("signing in again clears the reason", async () => {
+    const { api, auth, storage } = setup();
+    const events = record(auth);
+    await auth.signIn(SIGN_IN);
+    await auth.signOut();
+    expect(events.at(-1)?.reason).toBe("signed_out");
+    await auth.signIn(SIGN_IN);
+    expect(events.at(-1)).toMatchObject({ event: "SIGNED_IN" });
+    expect(events.at(-1)?.reason).toBeUndefined();
+    expect((await stored(storage))?.ended).toBeUndefined();
+    const fresh = createExwaveAuth({
+      publishableKey: PUBLISHABLE_KEY,
+      storage,
+      fetch: api.fetch,
+      runtime: runtime(new FakeClock()),
+    });
+    const reload = record(fresh);
+    await flush();
+    expect(reload[0]?.reason).toBeUndefined();
+    expect(reload[0]?.session).not.toBeNull();
+  });
+
+  test("sign out everywhere says so; a failed one is a plain sign-out", async () => {
+    const { api, auth } = setup();
+    const events = record(auth);
+    await auth.signIn(SIGN_IN);
+    await auth.signOut({ everywhere: true });
+    expect(events.at(-1)).toEqual({
+      event: "SIGNED_OUT",
+      session: null,
+      reason: "signed_out_everywhere",
+    });
+
+    await auth.signIn(SIGN_IN);
+    api.handlers.set("players/sign-out", () =>
+      Response.json({ error: "unavailable" }, { status: 503 }),
+    );
+    await auth.signOut({ everywhere: true }).catch(() => undefined);
+    expect(events.at(-1)?.reason).toBe("signed_out");
+  });
 });
 
 describe("cross-tab events", () => {
@@ -305,6 +423,53 @@ describe("cross-tab events", () => {
     await flush();
     expect(events.at(-1)?.event).toBe("SIGNED_OUT");
     expect(await b.getSession()).toBeNull();
+  });
+
+  // Storage events reach the other tab before the channel's message: the
+  // reason must survive whichever arrives first.
+  for (const withChannel of [true, false])
+    test(`a lock seen in one tab reaches the other with its reason (${withChannel ? "BroadcastChannel" : "storage events"})`, async () => {
+      const { clock, api, a, b } = tabs(withChannel);
+      const events = record(b);
+      await a.signIn(SIGN_IN);
+      await flush();
+      api.handlers.set("players/token/refresh", () =>
+        Response.json({ error: "player_locked" }, { status: 403 }),
+      );
+      clock.current += 900_000;
+      await a.getPlayerAccessToken().catch(() => undefined);
+      await flush();
+      expect(events.at(-1)).toEqual({
+        event: "SIGNED_OUT",
+        session: null,
+        reason: "player_locked",
+      });
+    });
+
+  test("a tab that waited on the lock while the other was locked out says why", async () => {
+    const { clock, api, a, b } = tabs(true);
+    const events = record(b);
+    await a.signIn(SIGN_IN);
+    await flush();
+    api.handlers.set("players/token/refresh", () =>
+      Response.json({ error: "player_locked" }, { status: 403 }),
+    );
+    // Both tabs' timers fire together; one calls the API, the other waits.
+    await clock.advance(840_000);
+    expect(api.count("players/token/refresh")).toBe(1);
+    expect(events.filter((e) => e.event === "SIGNED_OUT")).toEqual([
+      { event: "SIGNED_OUT", session: null, reason: "player_locked" },
+    ]);
+  });
+
+  test("sign out everywhere reaches the other tab as signed_out_everywhere", async () => {
+    const { a, b } = tabs(true);
+    const events = record(b);
+    await a.signIn(SIGN_IN);
+    await flush();
+    await a.signOut({ everywhere: true });
+    await flush();
+    expect(events.at(-1)?.reason).toBe("signed_out_everywhere");
   });
 
   test("a refresh in one tab hands the new PAT to the other", async () => {
@@ -416,6 +581,84 @@ describe("calls and errors", () => {
       everywhere: true,
     });
     expect(await auth.getSession()).toBeNull();
+  });
+
+  for (const [name, call] of [
+    [
+      "sign-up",
+      (auth: ReturnType<typeof createExwaveAuth>, password: string) =>
+        auth.signUp({ email: "new@example.com", password, displayName: "N" }),
+    ],
+    [
+      "password reset",
+      (auth: ReturnType<typeof createExwaveAuth>, password: string) =>
+        auth.confirmPasswordReset({ userId: "42", code: "XYZ", password }),
+    ],
+  ] as const)
+    test(`a weak password at ${name} names the rules it breaks`, async () => {
+      const { api, auth } = setup();
+      const path =
+        name === "sign-up"
+          ? "players/sign-up"
+          : "players/password-reset/confirm";
+      api.handlers.set(path, () =>
+        Response.json({ error: "weak_password" }, { status: 422 }),
+      );
+      api.handlers.set("config", config);
+      const failure = await call(auth, "Password123").catch((e) => e);
+      expect(failure).toBeInstanceOf(ExwaveAuthError);
+      expect(failure).toMatchObject({
+        code: "weak_password",
+        status: 422,
+        failedRules: ["symbol"],
+      });
+      expect(api.count("config")).toBe(1);
+    });
+
+  test("a weak password with config unreachable names no rule", async () => {
+    const { api, auth } = setup();
+    api.handlers.set("players/sign-up", () =>
+      Response.json({ error: "weak_password" }, { status: 422 }),
+    );
+    api.handlers.set("config", () => {
+      throw new TypeError("offline");
+    });
+    const failure = await auth
+      .signUp({ email: "n@example.com", password: "x", displayName: "N" })
+      .catch((e) => e);
+    expect(failure).toMatchObject({ code: "weak_password", failedRules: [] });
+  });
+
+  test("other errors carry no failedRules", async () => {
+    const { api, auth } = setup();
+    api.handlers.set("players/sign-up", () =>
+      Response.json({ error: "email_taken" }, { status: 409 }),
+    );
+    const failure = await auth
+      .signUp({ email: "n@example.com", password: "x", displayName: "N" })
+      .catch((e) => e);
+    expect(failure.code).toBe("email_taken");
+    expect(failure.failedRules).toBeUndefined();
+    expect(api.count("config")).toBe(0);
+  });
+
+  test("getConfig maps the password policy and caches it for 60 s", async () => {
+    const { clock, api, auth } = setup();
+    api.handlers.set("config", config);
+    const first = await auth.getConfig();
+    expect(first.passwordPolicy).toEqual({
+      minLength: 8,
+      requiresUppercase: true,
+      requiresLowercase: true,
+      requiresNumber: true,
+      requiresSymbol: true,
+    });
+    clock.current += 60_000;
+    await auth.getConfig();
+    expect(api.count("config")).toBe(1);
+    clock.current += 1;
+    await auth.getConfig();
+    expect(api.count("config")).toBe(2);
   });
 
   test("getPlayer calls players/me with the PAT", async () => {

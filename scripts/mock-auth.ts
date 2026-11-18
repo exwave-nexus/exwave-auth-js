@@ -70,11 +70,23 @@ export interface SentEmail {
   userId: string;
 }
 
+/** Zitadel's default complexity policy, which a new platform gets in production. */
+export const DEFAULT_PASSWORD_POLICY = {
+  min_length: 8,
+  requires_uppercase: true,
+  requires_lowercase: true,
+  requires_number: true,
+  requires_symbol: true,
+};
+
+export type MockPasswordPolicy = typeof DEFAULT_PASSWORD_POLICY;
+
 export interface MockAuthOptions {
   origin?: string;
   platformId?: string;
   patTtlSeconds?: number;
   signUpEnabled?: boolean;
+  passwordPolicy?: Partial<MockPasswordPolicy>;
   siteUrl?: string;
   allowedRedirectOrigins?: string[];
   now?: () => number;
@@ -118,12 +130,14 @@ const error = (
 ) => json({ error: code }, status, headers);
 const empty = (status: number) => new Response(null, { status, headers: CORS });
 
-function weakPassword(password: string) {
-  return (
-    password.length < 8 ||
-    !/[A-Z]/.test(password) ||
-    !/[a-z]/.test(password) ||
-    !/[0-9]/.test(password)
+// As Auth's meetsPasswordPolicy(): code points, and Zitadel's ASCII classes.
+function weakPassword(password: string, policy: MockPasswordPolicy) {
+  return !(
+    [...password].length >= policy.min_length &&
+    (!policy.requires_uppercase || /[A-Z]/.test(password)) &&
+    (!policy.requires_lowercase || /[a-z]/.test(password)) &&
+    (!policy.requires_number || /[0-9]/.test(password)) &&
+    (!policy.requires_symbol || /[^A-Za-z0-9]/.test(password))
   );
 }
 
@@ -135,6 +149,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
   const settings = {
     patTtlSeconds: options.patTtlSeconds ?? 900,
     signUpEnabled: options.signUpEnabled ?? true,
+    passwordPolicy: { ...DEFAULT_PASSWORD_POLICY, ...options.passwordPolicy },
   };
   const siteUrl = options.siteUrl ?? "http://localhost:5173/";
   const allowedOrigins = options.allowedRedirectOrigins ?? [
@@ -332,13 +347,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
           {
             platform_id: platformId,
             sign_up_enabled: settings.signUpEnabled,
-            password_policy: {
-              min_length: 8,
-              requires_uppercase: true,
-              requires_lowercase: true,
-              requires_number: true,
-              requires_symbol: false,
-            },
+            password_policy: settings.passwordPolicy,
             allowed_redirect_origins: allowedOrigins,
             oidc: {
               issuer: "http://localhost:4010/mock-zitadel",
@@ -367,10 +376,12 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
         )
           return error("invalid_request", 400);
         if (target === "invalid") return error("invalid_redirect_to", 400);
+        // Auth checks the policy before looking the player up.
+        if (weakPassword(password, settings.passwordPolicy))
+          return error("weak_password", 422);
         if (findByEmail(email)) return error("email_taken", 409);
         if (username && findByLogin(username))
           return error("username_taken", 409);
-        if (weakPassword(password)) return error("weak_password", 422);
         const user = addUser({
           email,
           password,
@@ -495,12 +506,14 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
         const password = str(body.password, 128);
         const limited = codeLimited(body.user_id);
         if (limited) return limited;
+        if (!password) return error("invalid_request", 400);
+        // As Auth: the policy first, so a weak password keeps the code usable.
+        if (weakPassword(password, settings.passwordPolicy))
+          return error("weak_password", 422);
         if (!user || !checkCode(user, "resetCode", body.code)) {
           hitFailure(`code:${String(body.user_id)}`);
           return error("invalid_code", 400);
         }
-        if (!password || weakPassword(password))
-          return error("weak_password", 422);
         user.password = password;
         user.resetCode = undefined;
         // The link reached the inbox, so the address is proven.
@@ -616,6 +629,9 @@ if (import.meta.main) {
     examples/vite-spa      VITE_EXWAVE_PUBLISHABLE_KEY=…
     examples/next-server   NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY=…
     (both are already in each example's .env.development)
+
+  Password policy   ${JSON.stringify(mock.settings.passwordPolicy)}
+    (Zitadel's default; createMockAuth({ passwordPolicy }) changes it)
 
   Test players (password ${SEED_PLAYERS[0]?.password})
     ${SEED_PLAYERS.map((p) => `${p.email} / ${p.username}${p.emailVerified ? "" : "  (email not verified)"}`).join("\n    ")}

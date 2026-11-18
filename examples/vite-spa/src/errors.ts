@@ -1,7 +1,71 @@
-import { isExwaveAuthError } from "@exwave/auth";
+import {
+  isExwaveAuthError,
+  type PasswordPolicy,
+  type PasswordRule,
+  type SignOutReason,
+} from "@exwave/auth";
+
+/** One rule of the platform's password policy, as a phrase. */
+export function describeRule(
+  rule: PasswordRule,
+  policy?: PasswordPolicy | null,
+): string {
+  switch (rule) {
+    case "min_length":
+      return policy?.minLength
+        ? `at least ${policy.minLength} characters`
+        : "more characters";
+    case "uppercase":
+      return "an uppercase letter (A–Z)";
+    case "lowercase":
+      return "a lowercase letter (a–z)";
+    case "number":
+      return "a number (0–9)";
+    case "symbol":
+      return "a symbol (like ! or #)";
+  }
+}
+
+/** Names the rules a password breaks, from `checkPassword()` or a 422's `failedRules`. */
+export function describeWeakPassword(
+  failed: PasswordRule[] | undefined,
+  policy?: PasswordPolicy | null,
+): string {
+  if (!failed?.length)
+    return "This password isn't accepted. Choose a stronger one.";
+  const parts = failed.map((rule) => describeRule(rule, policy));
+  const last = parts.pop();
+  return `Your password needs ${parts.length ? `${parts.join(", ")} and ${last}` : last}.`;
+}
+
+/** Why the player was signed out, for the sign-in page. */
+export function describeSignOut(reason: SignOutReason): {
+  text: string;
+  tone: "error" | "info" | "ok";
+} {
+  switch (reason) {
+    case "player_locked":
+      return {
+        text: "This account was locked, so you were signed out. Contact the game's support.",
+        tone: "error",
+      };
+    case "invalid_refresh_token":
+      return {
+        text: "Your session ended: you signed out everywhere or changed your password on another device, or it expired. Sign in again.",
+        tone: "info",
+      };
+    case "signed_out_everywhere":
+      return { text: "You signed out on every device.", tone: "ok" };
+    case "signed_out":
+      return { text: "You signed out.", tone: "ok" };
+  }
+}
 
 /** What to tell the player for each API error code. */
-export function describeError(error: unknown): string {
+export function describeError(
+  error: unknown,
+  policy?: PasswordPolicy | null,
+): string {
   if (!isExwaveAuthError(error)) return "Something went wrong. Try again.";
   switch (error.code) {
     case "invalid_credentials":
@@ -21,7 +85,7 @@ export function describeError(error: unknown): string {
     case "username_taken":
       return "This username is taken.";
     case "weak_password":
-      return "Choose a stronger password: 8+ characters with upper case, lower case and a number.";
+      return describeWeakPassword(error.failedRules, policy);
     case "invalid_code":
       return "This link has expired or was already used.";
     case "sign_up_disabled":

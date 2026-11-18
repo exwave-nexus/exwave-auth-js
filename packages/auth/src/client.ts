@@ -18,7 +18,8 @@ import type {
 /** Refresh the PAT this long before it expires. */
 export const REFRESH_MARGIN_MS = 60_000;
 const RETRY_MS = 10_000;
-const CONFIG_TTL_MS = 60_000;
+/** Auth serves config with `max-age=60`. */
+export const CONFIG_TTL_MS = 60_000;
 const ENDS_SESSION = new Set(["invalid_refresh_token", "player_locked"]);
 
 export type AuthChangeEvent =
@@ -27,12 +28,28 @@ export type AuthChangeEvent =
   | "SIGNED_OUT"
   | "TOKEN_REFRESHED";
 
-/** Why the player was signed out. */
+/**
+ * Why the player is signed out:
+ * - `signed_out`: they signed out on this device;
+ * - `signed_out_everywhere`: they signed out on every device, from this one;
+ * - `invalid_refresh_token`: the session ended elsewhere (sign out everywhere
+ *   or a password reset on another device) or expired;
+ * - `player_locked`: the platform locked the player (Nexus → Players).
+ */
 export type SignOutReason =
   | "signed_out"
+  | "signed_out_everywhere"
   | "invalid_refresh_token"
   | "player_locked";
 
+/** How long a reload or a new tab still reports why the last session ended. */
+export const SIGN_OUT_REASON_TTL_MS = 5 * 60_000;
+
+/**
+ * `info.reason` says why the player is signed out: on `SIGNED_OUT`, and on
+ * `INITIAL_SESSION` when the stored session ended while loading or in the
+ * last 5 minutes (in any tab).
+ */
 export type AuthChangeListener = (
   event: AuthChangeEvent,
   session: Session | null,
@@ -85,6 +102,7 @@ export interface ExwaveAuth {
   handleEmailLink(url?: string | URL): Promise<EmailLink | null>;
   resendVerification(input: EmailInput): Promise<void>;
   signIn(input: SignInInput): Promise<Session>;
+  /** Signs out here, or on every device (`SIGNED_OUT` with `signed_out_everywhere`). */
   signOut(options?: { everywhere?: boolean }): Promise<void>;
   resetPassword(input: EmailInput): Promise<void>;
   confirmPasswordReset(input: PasswordResetConfirmInput): Promise<Session>;
@@ -104,6 +122,25 @@ interface Stored {
   refreshToken: string;
   player: Player;
 }
+
+/** Left in storage when a session ends, so other tabs and reloads learn why. */
+interface Ended {
+  ended: SignOutReason;
+  at: number;
+}
+
+type Entry = Partial<Stored & Ended>;
+
+const parse = (raw: string | null): Entry => {
+  try {
+    return (raw && JSON.parse(raw)) || {};
+  } catch {
+    return {};
+  }
+};
+
+const isStored = (entry: Entry): entry is Stored =>
+  !!(entry.refreshToken && entry.player);
 
 type TabMessage =
   | { type: "SIGNED_IN" | "TOKEN_REFRESHED"; session: Session }
@@ -164,6 +201,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
   let inflight: Promise<string | null> | undefined;
   let mutex: Promise<unknown> = Promise.resolve();
   let config: { at: number; value: Promise<PlatformConfig> } | undefined;
+  let lastReason: SignOutReason | undefined;
   let closed = false;
 
   const isFresh = (
@@ -193,19 +231,17 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     return run;
   }
 
-  async function readStored(): Promise<Stored | null> {
+  async function readEntry(): Promise<Entry> {
     try {
-      const raw = await adapter.getItem(key);
-      return raw ? (JSON.parse(raw) as Stored) : null;
+      return parse(await adapter.getItem(key));
     } catch {
-      return null;
+      return {};
     }
   }
 
-  async function writeStored(value: Stored | null) {
+  async function write(value: Stored | Ended) {
     try {
-      if (value) await adapter.setItem(key, JSON.stringify(value));
-      else await adapter.removeItem(key);
+      await adapter.setItem(key, JSON.stringify(value));
     } catch {
       // Full or blocked storage: the session still works in memory.
     }
@@ -226,12 +262,14 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     );
   }
 
+  // Sessions end with a reason and start without one.
   function setSession(
     next: Session | null,
     event?: AuthChangeEvent,
-    info?: { reason?: SignOutReason },
+    info: { reason?: SignOutReason } = {},
   ) {
     session = next;
+    lastReason = info.reason;
     schedule();
     if (event) emit(event, info);
   }
@@ -244,7 +282,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     // A null refresh token means another tab or request already rotated it:
     // keep what is stored.
     if (tokens.refresh_token)
-      await writeStored({ refreshToken: tokens.refresh_token, player });
+      await write({ refreshToken: tokens.refresh_token, player });
     const next: Session = {
       player,
       accessToken: tokens.access_token,
@@ -256,7 +294,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
   }
 
   async function end(reason: SignOutReason) {
-    await writeStored(null);
+    await write({ ended: reason, at: rt.now() });
     channel?.postMessage({ type: "SIGNED_OUT", reason } satisfies TabMessage);
     if (session) setSession(null, "SIGNED_OUT", { reason });
   }
@@ -265,9 +303,13 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     inflight ??= withLock(async () => {
       // Another tab may have refreshed while this one waited for the lock.
       if (isFresh(session)) return session.accessToken;
-      const stored = await readStored();
-      if (!stored) {
-        if (session) setSession(null, "SIGNED_OUT", { reason: "signed_out" });
+      // Ended here or in another tab, maybe while this one waited.
+      const stored = await readEntry();
+      if (!isStored(stored)) {
+        if (session)
+          setSession(null, "SIGNED_OUT", {
+            reason: stored.ended ?? "signed_out",
+          });
         return null;
       }
       try {
@@ -297,9 +339,9 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
   async function signedIn(tokens: ApiTokens): Promise<Session> {
     await ready;
     return withLock(async () => {
-      const previous = await readStored();
-      if (previous && previous.refreshToken !== tokens.refresh_token)
-        api.signOut(previous.refreshToken).catch(() => undefined);
+      const previous = (await readEntry()).refreshToken;
+      if (previous && previous !== tokens.refresh_token)
+        api.signOut(previous).catch(() => undefined);
       return establish(tokens, "SIGNED_IN");
     });
   }
@@ -325,20 +367,19 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
   const offStorage = multiTab
     ? rt.onStorageChange((changed, value) => {
         if (changed !== null && changed !== key) return;
-        if (value === null) {
-          if (session) setSession(null, "SIGNED_OUT", { reason: "signed_out" });
-        } else if (!session && !channel) {
+        const entry = parse(value);
+        if (!isStored(entry)) {
+          // Often ahead of the channel's message: take the reason from storage.
+          if (session)
+            setSession(null, "SIGNED_OUT", {
+              reason: entry.ended ?? "signed_out",
+            });
+        } else if (!session && !channel)
           // Without a channel, sign-ins arrive here, with no PAT yet.
-          try {
-            const { player } = JSON.parse(value) as Stored;
-            setSession(
-              { player, accessToken: null, expiresAt: null },
-              "SIGNED_IN",
-            );
-          } catch {
-            // Not ours.
-          }
-        }
+          setSession(
+            { player: entry.player, accessToken: null, expiresAt: null },
+            "SIGNED_IN",
+          );
       })
     : undefined;
 
@@ -349,9 +390,15 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     : undefined;
 
   const ready = (async () => {
-    const stored = await readStored();
-    if (stored && !session)
+    const stored = await readEntry();
+    if (!session && isStored(stored))
       session = { player: stored.player, accessToken: null, expiresAt: null };
+    else if (
+      !session &&
+      stored.ended &&
+      rt.now() - (stored.at ?? 0) < SIGN_OUT_REASON_TTL_MS
+    )
+      lastReason = stored.ended;
     if (session && autoRefresh && !isFresh(session))
       await refresh().catch(() => undefined);
   })();
@@ -389,14 +436,18 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     async signOut({ everywhere = false } = {}) {
       await ready;
       await withLock(async () => {
-        const stored = await readStored();
+        const { refreshToken } = await readEntry();
+        let reason: SignOutReason = "signed_out";
         try {
-          if (stored) await api.signOut(stored.refreshToken, everywhere);
+          if (refreshToken) {
+            await api.signOut(refreshToken, everywhere);
+            if (everywhere) reason = "signed_out_everywhere";
+          }
         } catch (error) {
           // Signing out here works offline; everywhere needs the API.
           if (everywhere) throw error;
         } finally {
-          await end("signed_out");
+          await end(reason);
         }
       });
     },
@@ -431,7 +482,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
       ready.then(() => {
         if (!active) return;
         listeners.add(listener);
-        listener("INITIAL_SESSION", session, {});
+        listener("INITIAL_SESSION", session, { reason: lastReason });
       });
       return () => {
         active = false;

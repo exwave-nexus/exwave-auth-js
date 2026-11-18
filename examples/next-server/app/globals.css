@@ -166,3 +166,36 @@ pre {
   font-size: 1.6rem;
   font-weight: 600;
 }
+
+.rules {
+  list-style: none;
+  margin: -0.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.rules .ok {
+  color: var(--ok);
+}
+
+.notice {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.notice.error {
+  border-left-color: var(--danger);
+}
+
+.notice.ok {
+  border-left-color: var(--ok);
+  color: var(--text);
+}

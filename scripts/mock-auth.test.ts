@@ -14,10 +14,10 @@ const APP = "http://localhost:3000";
 const SECRET = "mock-test-cookie-secret-32-chars!!";
 const PLAYER = { login: "player1", password: "Password123!" };
 
-async function setup() {
+async function setup(options: Parameters<typeof createMockAuth>[0] = {}) {
   const clock = { now: Date.now() };
   const now = () => clock.now;
-  const mock = await createMockAuth({ now, log: () => {} });
+  const mock = await createMockAuth({ now, log: () => {}, ...options });
   const fetch = mock.fetcher();
   const jwks = createLocalJWKSet(
     (await (await fetch(`${mock.origin}/orbit/v1/jwks`)).json()) as {
@@ -109,6 +109,56 @@ describe("browser client against the mock", () => {
     ).toBe("weak_password");
   });
 
+  test("production's default policy: a password without a symbol names the symbol", async () => {
+    const { mock, fetch } = await setup();
+    const auth = client(mock, fetch);
+    const { passwordPolicy } = await auth.getConfig();
+    expect(passwordPolicy.requiresSymbol).toBe(true);
+    const failure = await auth
+      .signUp({
+        email: "first@example.com",
+        password: "Password123",
+        displayName: "First",
+      })
+      .catch((e) => e);
+    expect(failure).toMatchObject({
+      code: "weak_password",
+      status: 422,
+      failedRules: ["symbol"],
+    });
+    // Checked before the email lookup, as Auth does.
+    expect(
+      await auth
+        .signUp({
+          email: "player@example.com",
+          password: "weak",
+          displayName: "X",
+        })
+        .catch((e) => e.failedRules),
+    ).toEqual(["min_length", "uppercase", "number", "symbol"]);
+  });
+
+  test("a weak password at reset names the rules and keeps the code usable", async () => {
+    const { mock, fetch } = await setup({
+      passwordPolicy: { min_length: 12 },
+    });
+    const auth = client(mock, fetch);
+    await auth.resetPassword({ email: "player@example.com" });
+    const link = await auth.handleEmailLink(mock.emails.at(-1)?.link);
+    if (link?.type !== "password_reset")
+      throw new Error("expected a reset link");
+    expect(
+      await auth
+        .confirmPasswordReset({ ...link, password: "Short1!" })
+        .catch((e) => e.failedRules),
+    ).toEqual(["min_length"]);
+    const session = await auth.confirmPasswordReset({
+      ...link,
+      password: "LongEnough123!",
+    });
+    expect(session.player.username).toBe("player1");
+  });
+
   test("locking the player fails the next refresh with player_locked", async () => {
     const { mock, fetch, clock, now } = await setup();
     const auth = client(mock, fetch, now);
@@ -130,7 +180,7 @@ describe("browser client against the mock", () => {
     const link = await auth.handleEmailLink(mock.emails.at(-1)?.link);
     if (link?.type !== "password_reset")
       throw new Error("expected a reset link");
-    await auth.confirmPasswordReset({ ...link, password: "NewPassword456" });
+    await auth.confirmPasswordReset({ ...link, password: "NewPassword456!" });
     expect(await auth.getSession()).not.toBeNull();
     clock.now += 850_000;
     expect(await other.getPlayerAccessToken().catch((e) => e.code)).toBe(
@@ -268,7 +318,7 @@ describe("server route handler against the mock", () => {
     expect(written).toHaveLength(1);
   });
 
-  test("a locked player's session cookie is cleared at the next refresh", async () => {
+  test("a locked player's session cookie is cleared at the next refresh, leaving the reason", async () => {
     const { request, signIn, clock, mock } = await server();
     const cookie = await signIn();
     await mock.lock("player1");
@@ -276,10 +326,25 @@ describe("server route handler against the mock", () => {
     const response = await request("GET", "token", { cookie });
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({ error: "player_locked" });
-    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+    const [cleared, reason] = response.headers.getSetCookie();
+    expect(cleared).toStartWith("exwave_session=;");
+    expect(cleared).toContain("Max-Age=0");
+    expect(reason).toBe(
+      "exwave_session_signed_out=player_locked; Path=/; Max-Age=300; HttpOnly; SameSite=Lax",
+    );
+
+    // Browser code reads it from GET session (the cookie is httpOnly).
+    const session = await request("GET", "session", {
+      cookie: (reason ?? "").split(";")[0],
+    });
+    expect(await session.json()).toEqual({
+      player: null,
+      expiresAt: null,
+      signOutReason: "player_locked",
+    });
   });
 
-  test("sign out everywhere ends the player's other sessions", async () => {
+  test("sign out everywhere ends the player's other sessions, and each says why", async () => {
     const { request, signIn, clock } = await server();
     const here = await signIn();
     const elsewhere = await signIn();
@@ -288,10 +353,87 @@ describe("server route handler against the mock", () => {
       body: { everywhere: true },
     });
     expect(out.status).toBe(204);
-    expect(out.headers.get("set-cookie")).toContain("Max-Age=0");
+    expect(out.headers.getSetCookie()).toEqual([
+      expect.stringContaining("Max-Age=0"),
+      expect.stringMatching(
+        /^exwave_session_signed_out=signed_out_everywhere;/,
+      ),
+    ]);
     clock.now += 850_000;
     const session = await request("GET", "session", { cookie: elsewhere });
-    expect(await session.json()).toEqual({ player: null, expiresAt: null });
+    expect(await session.json()).toEqual({
+      player: null,
+      expiresAt: null,
+      signOutReason: "invalid_refresh_token",
+    });
+    expect(session.headers.getSetCookie()[1]).toStartWith(
+      "exwave_session_signed_out=invalid_refresh_token;",
+    );
+  });
+
+  test("a plain sign-out says signed_out; signing in again clears the reason", async () => {
+    const { request, signIn } = await server();
+    const out = await request("POST", "sign-out", { cookie: await signIn() });
+    const reason = (out.headers.getSetCookie()[1] ?? "").split(";")[0];
+    expect(reason).toBe("exwave_session_signed_out=signed_out");
+
+    const back = await request("POST", "sign-in", {
+      body: PLAYER,
+      cookie: reason,
+    });
+    expect(back.headers.getSetCookie()).toEqual([
+      expect.stringMatching(/^exwave_session=/),
+      expect.stringMatching(/^exwave_session_signed_out=;/),
+    ]);
+    // Without a reason cookie there is nothing to clear.
+    const again = await request("POST", "sign-in", { body: PLAYER });
+    expect(again.headers.getSetCookie()).toHaveLength(1);
+  });
+
+  test("an unknown reason cookie is ignored", async () => {
+    const { request } = await server();
+    const session = await request("GET", "session", {
+      cookie: "exwave_session_signed_out=<script>",
+    });
+    expect((await session.json()).signOutReason).toBeNull();
+  });
+
+  test("a weak password answers 422 with the rules it breaks", async () => {
+    const { request } = await server();
+    const response = await request("POST", "sign-up", {
+      body: {
+        email: "weak@example.com",
+        password: "password123",
+        displayName: "W",
+      },
+    });
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: "weak_password",
+      failedRules: ["uppercase", "symbol"],
+    });
+  });
+
+  test("config is cached for 60 s", async () => {
+    const { auth, mock, clock } = await server();
+    let calls = 0;
+    const counting = createExwaveServerAuth({
+      publishableKey: mock.publishableKey,
+      cookieSecret: SECRET,
+      fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input).endsWith("/config")) calls++;
+        return mock.fetcher()(input, init);
+      }) as typeof fetch,
+      now: () => clock.now,
+    });
+    expect((await counting.getConfig()).passwordPolicy.minLength).toBe(8);
+    clock.now += 60_000;
+    await counting.getConfig();
+    expect(calls).toBe(1);
+    clock.now += 1;
+    await counting.getConfig();
+    expect(calls).toBe(2);
+    expect(auth.reasonCookieName).toBe("exwave_session_signed_out");
   });
 
   test("sign-up uses the app's verify page for the email link", async () => {
@@ -319,7 +461,7 @@ describe("choices exwave-auth PR #12 made (shared notes, player-rest-api-contrac
       requiresUppercase: true,
       requiresLowercase: true,
       requiresNumber: true,
-      requiresSymbol: false,
+      requiresSymbol: true,
     });
     expect(config.oidc.scopes).toContain("openid");
   });

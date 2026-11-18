@@ -8,6 +8,7 @@ export {
   type ExwaveAuth,
   type ExwaveAuthOptions,
   REFRESH_MARGIN_MS,
+  SIGN_OUT_REASON_TTL_MS,
   type SignOutReason,
 } from "./client";
 export {
@@ -15,6 +16,7 @@ export {
   type ExwaveAuthErrorCode,
   isExwaveAuthError,
 } from "./errors";
+export { checkPassword, type PasswordRule, passwordRules } from "./password";
 export {
   decodePublishableKey,
   encodePublishableKey,

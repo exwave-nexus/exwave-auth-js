@@ -1,3 +1,4 @@
+import type { SignOutReason } from "../client";
 import { ExwaveAuthError, isExwaveAuthError } from "../errors";
 import type { ServerSession } from "./cookie";
 import type { ExwaveServerAuth, RefreshResult } from "./index";
@@ -39,7 +40,8 @@ function sameOrigin(request: Request): boolean {
  *
  * - `POST sign-up | sign-in | verify-email | verify-email/resend |
  *   password-reset | password-reset/confirm | sign-out` (camelCase JSON bodies)
- * - `GET session`: `{player, expiresAt}`, refreshing when needed
+ * - `GET session`: `{player, expiresAt}`, refreshing when needed; signed out,
+ *   `{player: null, expiresAt: null, signOutReason}` says why (or `null`)
  * - `GET token`: `{access_token, token_type, expires_in}` for a game on the
  *   page, same origin only (`Sec-Fetch-Site: same-origin`)
  * - `GET config`
@@ -52,10 +54,25 @@ export async function handleAuthRequest(
 ): Promise<Response> {
   const route = `${request.method} ${action}`;
   const secure = auth.isSecureRequest(request.url);
+  const setCookies = (...values: string[]): [string, string][] =>
+    values.map((value) => ["set-cookie", value]);
+  // Starting a session forgets why the last one ended.
   const signedIn = async (session: ServerSession, status = 200) =>
-    json({ player: session.player, expiresAt: session.expiresAt }, status, {
-      "set-cookie": await auth.sessionCookie(session, secure),
-    });
+    json(
+      { player: session.player, expiresAt: session.expiresAt },
+      status,
+      setCookies(
+        await auth.sessionCookie(session, secure),
+        ...(auth.readSignOutReason(request)
+          ? [auth.clearSignOutReasonCookie(secure)]
+          : []),
+      ),
+    );
+  const ended = (reason: SignOutReason) =>
+    setCookies(
+      auth.clearCookie(secure),
+      auth.signOutReasonCookie(reason, secure),
+    );
 
   try {
     if (request.method === "POST" && !sameOrigin(request))
@@ -124,15 +141,22 @@ export async function handleAuthRequest(
       case "POST sign-out": {
         const everywhere = body.everywhere === true;
         const session = await auth.readCookie(request);
-        const cleared = { "set-cookie": auth.clearCookie(secure) };
+        let reason: SignOutReason = "signed_out";
         try {
-          if (session) await auth.signOut(session, { everywhere });
+          if (session) {
+            await auth.signOut(session, { everywhere });
+            if (everywhere) reason = "signed_out_everywhere";
+          }
         } catch (error) {
           // The cookie goes either way; everywhere needs the API to succeed.
           if (everywhere && isExwaveAuthError(error))
-            return json({ error: error.code }, error.status || 503, cleared);
+            return json(
+              { error: error.code },
+              error.status || 503,
+              ended("signed_out"),
+            );
         }
-        return new Response(null, { status: 204, headers: cleared });
+        return new Response(null, { status: 204, headers: ended(reason) });
       }
       case "GET session":
       case "GET token": {
@@ -141,7 +165,11 @@ export async function handleAuthRequest(
         if (!session)
           return token
             ? json({ error: "not_signed_in" }, 401)
-            : json({ player: null, expiresAt: null });
+            : json({
+                player: null,
+                expiresAt: null,
+                signOutReason: auth.readSignOutReason(request),
+              });
         let result: RefreshResult;
         try {
           result = await auth.refreshSession(session);
@@ -150,18 +178,20 @@ export async function handleAuthRequest(
           if (session.expiresAt <= auth.now()) throw error;
           result = { session, cookie: "keep" };
         }
-        const headers: Record<string, string> = {};
-        if (result.cookie === "write")
-          headers["set-cookie"] = await auth.sessionCookie(
-            result.session,
-            secure,
-          );
-        if (result.cookie === "clear")
-          headers["set-cookie"] = auth.clearCookie(secure);
-        if (!result.session)
+        if (!result.session) {
+          const headers = ended(result.reason);
           return token
             ? json({ error: result.error.code }, result.error.status, headers)
-            : json({ player: null, expiresAt: null }, 200, headers);
+            : json(
+                { player: null, expiresAt: null, signOutReason: result.reason },
+                200,
+                headers,
+              );
+        }
+        const headers =
+          result.cookie === "write"
+            ? setCookies(await auth.sessionCookie(result.session, secure))
+            : [];
         const { accessToken, expiresAt, player } = result.session;
         return token
           ? json(
@@ -184,6 +214,10 @@ export async function handleAuthRequest(
     if (!isExwaveAuthError(error)) throw error;
     const headers: Record<string, string> = {};
     if (error.retryAfter) headers["retry-after"] = String(error.retryAfter);
-    return json({ error: error.code }, error.status || 503, headers);
+    return json(
+      { error: error.code, failedRules: error.failedRules },
+      error.status || 503,
+      headers,
+    );
   }
 }

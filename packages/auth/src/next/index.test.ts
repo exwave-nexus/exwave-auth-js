@@ -46,6 +46,34 @@ describe("Next.js proxy helper", () => {
     );
   });
 
+  test("a locked player loses the cookie and the render learns why", async () => {
+    const { mock, fetch, clock, now } = await setup();
+    const exwave = createExwaveNext({
+      publishableKey: mock.publishableKey,
+      cookieSecret: SECRET,
+      fetch,
+      now,
+    });
+    const sealed = await exwave.server.seal(await exwave.server.signIn(PLAYER));
+    await mock.lock("player1");
+    clock.now += 850_000;
+    const response = await exwave.proxy(
+      new NextRequest(`${APP}/account`, {
+        headers: { cookie: `exwave_session=${sealed}` },
+      }),
+    );
+    expect(response.headers.getSetCookie()).toEqual([
+      expect.stringMatching(/^exwave_session=; Path=\/; Expires=/),
+      expect.stringMatching(
+        /^exwave_session_signed_out=player_locked; Path=\/; Expires=[^;]+; Max-Age=300; HttpOnly; SameSite=lax$/,
+      ),
+    ]);
+    // This render sees the reason (for a sign-in page) and no session.
+    const forwarded = response.headers.get("x-middleware-request-cookie") ?? "";
+    expect(forwarded).toContain("exwave_session_signed_out=player_locked");
+    expect(forwarded).not.toContain(sealed);
+  });
+
   test("drops a cookie it cannot open", async () => {
     const { mock, fetch } = await setup();
     const exwave = createExwaveNext({

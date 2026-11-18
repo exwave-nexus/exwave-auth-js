@@ -1,4 +1,5 @@
-import { ExwaveAuthError } from "./errors";
+import { ExwaveAuthError, isExwaveAuthError } from "./errors";
+import { checkPassword } from "./password";
 import { decodePublishableKey } from "./publishable-key";
 import type {
   ApiPlayer,
@@ -70,24 +71,48 @@ export function createPlayerApi(
     email: input.email,
     redirect_to: input.redirectTo,
   });
+  const config = async () => toConfig(await call<Json>("GET", "config"));
+
+  // The API answers `weak_password` alone: name the broken rules from a fresh
+  // policy (it may have changed since the form read it).
+  async function checked<T>(password: string, run: Promise<T>): Promise<T> {
+    try {
+      return await run;
+    } catch (error) {
+      if (!isExwaveAuthError(error) || error.code !== "weak_password")
+        throw error;
+      const policy = await config().then(
+        (c) => c.passwordPolicy,
+        () => ({}),
+      );
+      throw new ExwaveAuthError(
+        error.code,
+        error.status,
+        undefined,
+        checkPassword(password, policy),
+      );
+    }
+  }
 
   return {
     authOrigin,
     platformId,
-    async config(): Promise<PlatformConfig> {
-      return toConfig(await call<Json>("GET", "config"));
-    },
+    config,
     async signUp(input: SignUpInput): Promise<SignUpResult> {
-      const result = await call<{
-        user_id: string;
-        verification: "email_sent";
-      }>("POST", "players/sign-up", {
-        email: input.email,
-        password: input.password,
-        display_name: input.displayName,
-        username: input.username || undefined,
-        redirect_to: input.redirectTo,
-      });
+      const result = await checked(
+        input.password,
+        call<{ user_id: string; verification: "email_sent" }>(
+          "POST",
+          "players/sign-up",
+          {
+            email: input.email,
+            password: input.password,
+            display_name: input.displayName,
+            username: input.username || undefined,
+            redirect_to: input.redirectTo,
+          },
+        ),
+      );
       return { userId: result.user_id, verification: result.verification };
     },
     verifyEmail: (input: CodeInput) =>
@@ -112,11 +137,14 @@ export function createPlayerApi(
     resetPassword: (input: EmailInput) =>
       call<void>("POST", "players/password-reset", links(input)),
     confirmPasswordReset: (input: PasswordResetConfirmInput) =>
-      tokens("players/password-reset/confirm", {
-        user_id: input.userId,
-        code: input.code,
-        password: input.password,
-      }),
+      checked(
+        input.password,
+        tokens("players/password-reset/confirm", {
+          user_id: input.userId,
+          code: input.code,
+          password: input.password,
+        }),
+      ),
     async me(accessToken: string): Promise<Player> {
       const data = await call<{ player?: ApiPlayer } & ApiPlayer>(
         "GET",

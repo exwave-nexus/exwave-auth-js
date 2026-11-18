@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { exwave } from "@/lib/exwave";
 import { ResetPasswordForm } from "../forms";
 
 // The reset email links here: ?exwave_reset=<code>&uid=<user id>.
@@ -15,5 +16,12 @@ export default async function ResetPasswordPage({
         <Link href="/forgot-password">Ask for a new one</Link>
       </section>
     );
-  return <ResetPasswordForm userId={uid} code={code} />;
+  const config = await exwave.getConfig().catch(() => null);
+  return (
+    <ResetPasswordForm
+      userId={uid}
+      code={code}
+      policy={config?.passwordPolicy ?? null}
+    />
+  );
 }

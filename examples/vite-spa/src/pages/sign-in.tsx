@@ -1,17 +1,15 @@
 import { isExwaveAuthError } from "@exwave/auth";
 import { useExwave } from "@exwave/auth/react";
 import { useState } from "react";
+import { describeSignOut } from "../errors";
 import { Link, navigate } from "../router";
 import { field, secret, useAction } from "../use-action";
 import { CheckEmail } from "./sign-up";
 
-const signedOutBecause: Record<string, string> = {
-  player_locked: "This account was locked, so you were signed out.",
-  invalid_refresh_token: "Your session ended. Sign in again.",
-};
-
 export function SignInPage() {
   const { auth, signOutReason } = useExwave();
+  // Set when the session ended: here, in another tab, or before a reload.
+  const signedOut = signOutReason && describeSignOut(signOutReason);
   const [login, setLogin] = useState("");
   const signIn = useAction(async (data) => {
     setLogin(field(data, "login"));
@@ -30,8 +28,10 @@ export function SignInPage() {
   return (
     <section className="card">
       <h1>Sign in</h1>
-      {signOutReason && signedOutBecause[signOutReason] && (
-        <p className="error">{signedOutBecause[signOutReason]}</p>
+      {signedOut && (
+        <p className={`notice ${signedOut.tone}`} role="status">
+          {signedOut.text}
+        </p>
       )}
       <form onSubmit={signIn.onSubmit}>
         <label>
