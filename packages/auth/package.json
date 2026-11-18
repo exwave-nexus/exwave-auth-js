@@ -1,0 +1,45 @@
+{
+  "name": "@exwave/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Managed player auth for Exwave platforms: browser, Bun, Node, Next.js and React.",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server/index.ts",
+    "./next": "./src/next/index.ts",
+    "./react": "./src/react/index.tsx"
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "bun build.ts"
+  },
+  "dependencies": {
+    "jose": "6.2.17"
+  },
+  "peerDependencies": {
+    "next": ">=16.0.0",
+    "react": ">=19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "@types/react": "19.3.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "6.0.3"
+  }
+}
