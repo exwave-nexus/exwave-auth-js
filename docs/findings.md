@@ -9,10 +9,11 @@ the player REST API (exwave-auth v0.7.0, `/orbit/v1/platforms/:platformId/…`):
 - **Server** (`examples/next-server`): the Next.js server calls the API with
   `@exwave/auth/next`. The browser holds one sealed, httpOnly cookie.
 
-Status (2026-11-18): measured against the in-memory mock
-(`scripts/mock-auth.ts`), which follows the plan's contract as exwave-auth
-PR #12 implements it. The production run (Phase 5) still has to confirm every
-point below against the real API.
+Status (2026-11-18): built against the in-memory mock
+(`scripts/mock-auth.ts`), then run against production (Auth v0.7.0, platform
+"Auth test") with only the publishable key from Nexus. Everything below held in
+production; see [Production run](#production-run-2026-11-18) for what was
+checked and what it found.
 
 ## Setup effort
 
@@ -93,7 +94,7 @@ Competitors from their current Next.js quickstarts
 ([Clerk](https://clerk.com/docs/nextjs/getting-started/quickstart),
 [Supabase](https://supabase.com/docs/guides/auth/server-side/nextjs),
 [Neon Auth](https://neon.com/docs/auth/quick-start/nextjs)), read on
-2026-11-18. Phase 5 times the real path from Nexus.
+2026-11-18. The Exwave columns were run from Nexus in production the same day.
 
 | | Exwave SPA | Exwave Next.js | Clerk | Supabase | Neon Auth |
 | --- | --- | --- | --- | --- | --- |
@@ -102,7 +103,7 @@ Competitors from their current Next.js quickstarts
 | Prebuilt UI | no | no | yes | no (auth-ui is separate) | yes |
 | Custom forms | yes, the only way | yes | yes (hooks) | yes | yes |
 | Steps to first sign-in | enable in Nexus → copy key → install → provider → form | same, plus a cookie secret and 3 files | create app → keys → install → proxy + provider | create project → keys → install → clients + proxy | enable auth → copy URL → install → handler + proxy |
-| Time to first sign-in | not measured yet (Phase 5, from Nexus) | not measured yet | — | — | — |
+| Time to first sign-in | 4 steps in Nexus, then sign up; not timed | same, plus the cookie secret | — | — | — |
 
 Takeaways:
 - One public key and no secret makes the SPA path the simplest of the five.
@@ -129,7 +130,7 @@ bundled for the browser by `Bun.build` with minification, then gzip level 9
 ## Contract questions, answered
 
 Found while building against the plan's contract and answered by the
-player API session in exwave-auth PR #12 (commit `5b27925`, not merged yet).
+player API session in exwave-auth PR #12 (commit `5b27925`, released in v0.7.0).
 The mock and the client now follow these answers; `scripts/mock-auth.test.ts`
 pins them.
 
@@ -151,12 +152,85 @@ per login) reset on a success; wrong codes are limited to 10 per 15 minutes
 per user; usernames match `^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$`; Zitadel failures
 answer `502 managed_auth_unavailable`. The mock does the same.
 
+## Production run (2026-11-18)
+
+Auth v0.7.0 on `auth-prod.exwave.net`, exwave-db 0064 and 0065 applied, and a
+new platform "Auth test" (Free plan) with managed auth turned on from Nexus.
+Turning it on created the platform's Zitadel org and PKCE app. Both examples
+ran on localhost with only `.env.development.local` changed: the publishable
+key, plus the cookie secret for Next.js.
+
+| Check | SPA | Next.js |
+| --- | --- | --- |
+| Sign up, verify by email link, signed in | ✓ (the email came through Zitadel's Resend SMTP provider) | — (same player) |
+| Sign in | ✓ | ✓ |
+| PAT claims (`iss`, `aud`, `managed:<platform>:<user>` subject, 900 s) | ✓ | ✓ |
+| PAT signature against `/orbit/v1/jwks` | ✓ (WebCrypto Ed25519, in the page) | ✓ (`GET /api/protected`, `verifyPlayerAccessToken()`) |
+| `GET players/me` with the PAT | ✓ | — |
+| Refresh and rotation | ✓ A new tab refreshed once, and the open tab took the new PAT | not waited out (proxy refresh at 14 min) |
+| Two-tab sign-out | ✓ Immediate | — |
+| Sign out everywhere | ✓ The SPA's next refresh got `401` and cleared every tab | ✓ Signed out at once (triggered here) |
+| Lock in Nexus | ✓ Next refresh got `403 player_locked`; both live sessions were revoked (`revoke_reason = player_locked`) | ✓ (its session was one of the two) |
+| Player in Nexus → Players | ✓ Managed auth, Active / Locked / Active | |
+
+**Client-side secrets.** Nothing leaks beyond what each design keeps in the
+browser:
+- **SPA:**
+  - storage holds only the refresh token and a player summary, in
+    `localStorage`. No PAT is stored anywhere (sessionStorage, cookies,
+    IndexedDB);
+  - no raw token is in the DOM;
+  - the delivered JS (24 scripts) and a production build contain only
+    `VITE_EXWAVE_PUBLISHABLE_KEY`: no secret, JWT, refresh token or
+    `process.env` read;
+  - the page contacts only its own origin and `auth-prod.exwave.net`, and no
+    token reaches the console.
+- **Next.js:**
+  - JavaScript can see no cookie, because the session cookie is `HttpOnly`;
+  - storage is empty;
+  - the DOM, server HTML and RSC payload hold no JWT, refresh token or sealed
+    cookie;
+  - none of the 17 client chunks contains the cookie secret's value, and `jose`
+    is not shipped.
+- **`GET /api/exwave/token`:**
+  - `200` with only `{access_token, token_type, expires_in}` and `no-store` to
+    the page itself;
+  - `403` to another origin on the same host (`localhost:5173`), even with the
+    real cookie attached;
+  - `403` to cross-site requests, `same-site` requests and requests without
+    `Sec-Fetch-Site`;
+  - `401` to a forged cookie.
+
+**Found:**
+- **Password policy.** The default requires a symbol. The first sign-up
+  attempts got `422 weak_password` three times before one passed. The examples
+  should show `password_policy` from `GET config` next to the field, and say
+  which rule failed.
+- **Unexplained sign-out.** The SPA, not only Next.js, signs a locked player
+  out without saying why.
+- **Stale status in Nexus.** After Unlock, the Players table showed "Locked"
+  until a reload, although the toast said "Player unlocked".
+- **No confirmation for Lock.** Lock acts at once. That is acceptable because
+  Unlock reverses it.
+- **Sessions on unlock.** Unlocking does not bring back the revoked sessions.
+  The player signs in again, as designed.
+- **Steps from Nexus to first sign-in:**
+  1. create the platform and pick a plan;
+  2. Auth → Enable managed auth;
+  3. Settings → Site URL and redirect URLs;
+  4. copy the publishable key into `.env.development.local`.
+
+  The overview's quickstart snippet matched the library. Time was not measured
+  with a stopwatch.
+
 ## Remaining gaps
 
 - Prebuilt, themeable forms (Clerk and Neon ship them).
-- The Next.js app cannot tell the player why a session ended (locked vs
-  expired): the proxy clears the cookie and the page just redirects. A
-  short-lived "signed out because" cookie would fix it.
+- Neither example can tell the player why a session ended (locked vs
+  expired or signed out elsewhere): the SPA drops to sign-in, and the Next.js
+  proxy clears the cookie and redirects. The refresh answer already says
+  `player_locked`; surface it (an event reason in the SPA, a short-lived
+  "signed out because" cookie in Next.js).
 - A new SPA tab refreshes once instead of asking an open tab for its PAT.
 - `@exwave/auth` exports TypeScript sources; publishing needs `exports` to point
   at `dist/` (the build already emits ESM and `.d.ts`).
