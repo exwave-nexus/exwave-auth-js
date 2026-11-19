@@ -1,0 +1,49 @@
+name: Release
+
+# Push a tag named after packages/auth's version (v0.1.0) to publish it to
+# GitHub Packages as @exwave-nexus/auth, with the workflow's own token.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.4.3
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: "@exwave-nexus"
+      - name: Check the tag matches the version
+        run: |
+          version=$(jq -r .version packages/auth/package.json)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match packages/auth version $version"
+            exit 1
+          fi
+      - run: bun install --frozen-lockfile
+      - name: Lint (Biome)
+        run: bunx biome ci .
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Test
+        run: bun test
+      - name: Build and stage
+        run: bun run --cwd packages/auth stage
+      - name: Publish
+        run: npm publish ./packages/auth/publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

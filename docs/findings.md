@@ -277,8 +277,6 @@ browser:
 
 - Prebuilt, themeable forms (Clerk and Neon ship them).
 - A new SPA tab refreshes once instead of asking an open tab for its PAT.
-- `@exwave/auth` exports TypeScript sources; publishing needs `exports` to point
-  at `dist/` (the build already emits ESM and `.d.ts`).
 - `__Host-` cookie prefix in production (it cannot work on plain-HTTP
   localhost, so it needs a per-environment name).
 - Playwright smoke tests for both examples (sign in, refresh, sign out, two
