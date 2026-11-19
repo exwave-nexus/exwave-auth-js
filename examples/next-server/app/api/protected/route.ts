@@ -1,4 +1,4 @@
-import { isExwaveAuthError } from "@exwave/auth/server";
+import { isExwaveAuthError } from "@exwave-nexus/auth/server";
 import { exwave } from "@/lib/exwave";
 
 // A protected API: accepts a PAT from any client (browser, game, server) and

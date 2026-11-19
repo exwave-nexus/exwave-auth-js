@@ -1,4 +1,4 @@
-import { useExwave } from "@exwave/auth/react";
+import { useExwave } from "@exwave-nexus/auth/react";
 import type { ReactNode } from "react";
 import { AccountPage } from "./pages/account";
 import { ForgotPasswordPage, ResetPasswordPage } from "./pages/password";

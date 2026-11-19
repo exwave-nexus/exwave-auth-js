@@ -1,4 +1,4 @@
-// Measures what the core costs a browser app: `@exwave/auth` (the "." entry),
+// Measures what the core costs a browser app: `@exwave-nexus/auth` (the "." entry),
 // bundled for the browser, minified, then gzipped at level 9.
 import { gzipSync } from "node:zlib";
 
@@ -28,7 +28,7 @@ if (import.meta.main) {
   const size = await measureCore();
   const kb = (bytes: number) => `${(bytes / 1024).toFixed(2)} KB`;
   console.log(
-    `@exwave/auth core: ${kb(size.minified)} min, ${kb(size.gzipped)} min+gz (${size.gzipped} B; budget ${kb(CORE_BUDGET_BYTES)})`,
+    `@exwave-nexus/auth core: ${kb(size.minified)} min, ${kb(size.gzipped)} min+gz (${size.gzipped} B; budget ${kb(CORE_BUDGET_BYTES)})`,
   );
   if (size.gzipped > CORE_BUDGET_BYTES) process.exit(1);
 }

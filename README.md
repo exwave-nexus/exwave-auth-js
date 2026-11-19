@@ -1,9 +1,8 @@
 # exwave-auth-js
 
-`@exwave/auth`: managed player auth for websites and game JS glue, plus two
-example apps. Private for now (EXC-294): the package is on GitHub Packages as
-`@exwave-nexus/auth`, and [`packages/auth/README.md`](packages/auth/README.md)
-says how to install it.
+`@exwave-nexus/auth`: managed player auth for websites and game JS glue, plus
+two example apps. Private for now (EXC-294), on GitHub Packages:
+[`packages/auth/README.md`](packages/auth/README.md) says how to install it.
 
 | Path | What |
 | --- | --- |
@@ -39,7 +38,7 @@ For a real platform, put the publishable key from Nexus → Managed auth in
 **Browser (any framework, or game JS glue):**
 
 ```ts
-import { createExwaveAuth } from "@exwave/auth";
+import { createExwaveAuth } from "@exwave-nexus/auth";
 
 const auth = createExwaveAuth({ publishableKey: "exw_pk_…" });
 await auth.signIn({ login: "player1", password });
@@ -53,6 +52,28 @@ auth.onAuthStateChange((event, session, { reason }) => {
 const { passwordPolicy } = await auth.getConfig();
 checkPassword("Password123", passwordPolicy); // ["symbol"]
 // A 422 weak_password names them too: error.failedRules
+```
+
+**Email links (sign-up verification, password reset):** the email links to
+your site with `?exwave_verify=…&uid=…` or `?exwave_reset=…&uid=…`, and
+nothing happens until that page spends the code. The link lands on
+`redirectTo`, which must share an origin with the Site URL or a redirect URL
+in Nexus → Managed auth → Settings; without it, on the Site URL itself.
+
+```ts
+await auth.signUp({ email, password, displayName, redirectTo: `${location.origin}/verify` });
+await auth.resetPassword({ email, redirectTo: `${location.origin}/reset-password` });
+
+// On those pages (null when the URL has no code):
+const link = await auth.handleEmailLink();
+if (link?.type === "email_verified") {
+  // Signed in: drop the spent code from the URL.
+  history.replaceState(null, "", "/");
+} else if (link?.type === "password_reset") {
+  await auth.confirmPasswordReset({ userId: link.userId, code: link.code, password }); // signed in
+}
+// A used or expired code throws ExwaveAuthError "invalid_code";
+// auth.resendVerification({ email, redirectTo }) sends a new link.
 ```
 
 **React:** `<ExwaveProvider publishableKey="exw_pk_…">` and `useExwave()`
@@ -74,8 +95,16 @@ in a Server Component, and `GET /api/exwave/token` for a game on the page.
 On the sign-in page, `await exwave.getSignOutReason()` says why the last
 session ended; `(await exwave.getConfig()).passwordPolicy` feeds sign-up forms.
 
+Email links land on `/verify` and `/reset-password` of the app's origin
+(`createExwaveNext({ paths })` changes them), so those pages must exist. Read
+`exwave_verify` or `exwave_reset`, and `uid`, from `searchParams`, then call
+`exwave.verifyEmail({ userId, code })` or
+`exwave.confirmPasswordReset({ userId, code, password })` from a Server
+Function: it sets the session cookie, which a Server Component cannot
+(`examples/next-server/app/verify`).
+
 **Any server:** `verifyPlayerAccessToken(token, { publishableKey })` from
-`@exwave/auth/server` checks a PAT against `/orbit/v1/jwks`.
+`@exwave-nexus/auth/server` checks a PAT against `/orbit/v1/jwks`.
 
 ## Develop
 
@@ -108,7 +137,3 @@ versions cannot be overwritten, only deleted from the package's settings.
 `packages/auth/publish/`: `dist/`, the README, `LICENSE` and a `package.json`
 whose exports point at `dist/` (the workspace's own one points at `src/`).
 `npm pack --dry-run ./packages/auth/publish` lists the files.
-
-To go public on npmjs as `@exwave/auth`, change `PUBLISH_AS` in
-`packages/auth/stage.ts`, and the registry and token in
-`.github/workflows/release.yml`.

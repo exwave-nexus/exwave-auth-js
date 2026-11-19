@@ -4,7 +4,7 @@ import {
   checkPassword,
   type PasswordPolicy,
   passwordRules,
-} from "@exwave/auth";
+} from "@exwave-nexus/auth";
 import { useEffect, useId, useRef, useState } from "react";
 import { describeRule, describeWeakPassword } from "@/lib/errors";
 

@@ -2,7 +2,7 @@
 
 ## Layout
 
-Bun workspaces: `packages/auth` (the `@exwave/auth` library), `examples/*`
+Bun workspaces: `packages/auth` (the `@exwave-nexus/auth` library), `examples/*`
 (a Vite SPA and a Next.js app), `scripts/` (the mock player API and the bundle
 size check), `docs/findings.md`.
 

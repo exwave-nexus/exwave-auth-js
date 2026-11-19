@@ -1,4 +1,4 @@
-import { useExwave } from "@exwave/auth/react";
+import { useExwave } from "@exwave-nexus/auth/react";
 import { useEffect, useState } from "react";
 import { describeError } from "../errors";
 import { PasswordField, usePasswordPolicy } from "../password-field";

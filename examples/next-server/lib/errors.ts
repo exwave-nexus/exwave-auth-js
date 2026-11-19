@@ -3,7 +3,7 @@ import {
   type PasswordPolicy,
   type PasswordRule,
   type SignOutReason,
-} from "@exwave/auth";
+} from "@exwave-nexus/auth";
 
 /** One rule of the platform's password policy, as a phrase. */
 export function describeRule(

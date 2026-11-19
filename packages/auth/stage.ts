@@ -4,12 +4,7 @@
 // sources. Run `bun build.ts` first (`bun run stage` does both).
 import { cp, mkdir, rm } from "node:fs/promises";
 
-// GitHub Packages only takes packages scoped to the repository's owner. Once
-// the package is public on npmjs, it can publish under its own name.
-const PUBLISH_AS = {
-  name: "@exwave-nexus/auth",
-  registry: "https://npm.pkg.github.com",
-};
+const REGISTRY = "https://npm.pkg.github.com";
 
 const root = new URL("./", import.meta.url);
 const out = new URL("./publish/", root);
@@ -27,7 +22,7 @@ for (const [entry, path] of Object.entries<string>(source.exports)) {
 }
 
 const manifest = {
-  name: PUBLISH_AS.name,
+  name: source.name,
   version: source.version,
   description: source.description,
   license: source.license,
@@ -38,7 +33,7 @@ const manifest = {
   dependencies: source.dependencies,
   peerDependencies: source.peerDependencies,
   peerDependenciesMeta: source.peerDependenciesMeta,
-  publishConfig: { registry: PUBLISH_AS.registry },
+  publishConfig: { registry: REGISTRY },
 };
 
 await rm(out, { recursive: true, force: true });

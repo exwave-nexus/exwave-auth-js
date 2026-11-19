@@ -14,7 +14,7 @@
     "examples/next-server": {
       "name": "@exwave-examples/next-server",
       "dependencies": {
-        "@exwave/auth": "workspace:*",
+        "@exwave-nexus/auth": "workspace:*",
         "next": "16.4.6",
         "react": "19.3.1",
         "react-dom": "19.3.1",
@@ -29,7 +29,7 @@
     "examples/vite-spa": {
       "name": "@exwave-examples/vite-spa",
       "dependencies": {
-        "@exwave/auth": "workspace:*",
+        "@exwave-nexus/auth": "workspace:*",
         "react": "19.3.1",
         "react-dom": "19.3.1",
       },
@@ -42,7 +42,7 @@
       },
     },
     "packages/auth": {
-      "name": "@exwave/auth",
+      "name": "@exwave-nexus/auth",
       "version": "0.1.0",
       "dependencies": {
         "jose": "6.2.17",
@@ -94,7 +94,7 @@
 
     "@exwave-examples/vite-spa": ["@exwave-examples/vite-spa@workspace:examples/vite-spa"],
 
-    "@exwave/auth": ["@exwave/auth@workspace:packages/auth"],
+    "@exwave-nexus/auth": ["@exwave-nexus/auth@workspace:packages/auth"],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

@@ -4,10 +4,10 @@ Two ways to sign players in to a website with Exwave managed auth, built on
 the player REST API (exwave-auth v0.7.0, `/orbit/v1/platforms/:platformId/…`):
 
 - **SPA** (`examples/vite-spa`): the browser calls the API with
-  `@exwave/auth`. The PAT stays in memory; the refresh token sits in
+  `@exwave-nexus/auth`. The PAT stays in memory; the refresh token sits in
   `localStorage`.
 - **Server** (`examples/next-server`): the Next.js server calls the API with
-  `@exwave/auth/next`. The browser holds one sealed, httpOnly cookie.
+  `@exwave-nexus/auth/next`. The browser holds one sealed, httpOnly cookie.
 
 Status (2026-11-18): built against the in-memory mock
 (`scripts/mock-auth.ts`), then run against production (Auth v0.7.0, platform
@@ -133,7 +133,7 @@ Added after the production run, where three sign-ups in a row got
   routes; it asks again when `expires_in` runs low. Cross-origin requests and
   requests without `Sec-Fetch-Site` are refused.
 - Either way, services verify the PAT with `/orbit/v1/jwks`
-  (`verifyPlayerAccessToken()` in `@exwave/auth/server`), as
+  (`verifyPlayerAccessToken()` in `@exwave-nexus/auth/server`), as
   `examples/next-server/app/api/protected` does.
 
 ## DX scorecard
@@ -163,7 +163,7 @@ Takeaways:
 
 ## Core bundle size
 
-`@exwave/auth` (the `.` entry: client, publishable key, errors, storage,
+`@exwave-nexus/auth` (the `.` entry: client, publishable key, errors, storage,
 password rules),
 bundled for the browser by `Bun.build` with minification, then gzip level 9
 (`bun run size`):

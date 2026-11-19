@@ -1,6 +1,6 @@
 "use server";
 
-import { isExwaveAuthError } from "@exwave/auth/next";
+import { isExwaveAuthError } from "@exwave-nexus/auth/next";
 import { redirect } from "next/navigation";
 import { describeError } from "@/lib/errors";
 import { exwave } from "@/lib/exwave";

@@ -1,4 +1,4 @@
-import { ExwaveProvider } from "@exwave/auth/react";
+import { ExwaveProvider } from "@exwave-nexus/auth/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
