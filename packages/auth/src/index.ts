@@ -29,7 +29,7 @@ export {
 } from "./storage";
 export type * from "./types";
 
-/** Reads a PAT's claims without verifying it. Verify on the server with `@exwave/auth/server`. */
+/** Reads a PAT's claims without verifying it. Verify on the server with `@exwave-nexus/auth/server`. */
 export function decodePlayerAccessToken(
   token: string,
 ): PlayerAccessTokenClaims {

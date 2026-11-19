@@ -1,6 +1,6 @@
 {
-  "name": "@exwave/auth",
-  "version": "0.1.0",
+  "name": "@exwave-nexus/auth",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Managed player auth for Exwave platforms: browser, Bun, Node, Next.js and React.",

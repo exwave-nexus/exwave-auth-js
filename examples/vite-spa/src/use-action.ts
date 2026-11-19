@@ -1,4 +1,4 @@
-import type { PasswordPolicy } from "@exwave/auth";
+import type { PasswordPolicy } from "@exwave-nexus/auth";
 import { type FormEvent, useState } from "react";
 import { describeError } from "./errors";
 

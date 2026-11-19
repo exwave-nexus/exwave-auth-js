@@ -1,6 +1,6 @@
 "use client";
 
-import type { PasswordPolicy } from "@exwave/auth";
+import type { PasswordPolicy } from "@exwave-nexus/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";

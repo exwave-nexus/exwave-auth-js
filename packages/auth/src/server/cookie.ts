@@ -66,7 +66,7 @@ export function createCookieSealer(
     list.some((s) => typeof s !== "string" || s.length < 32)
   )
     throw new Error(
-      "@exwave/auth: cookieSecret must be at least 32 characters (set EXWAVE_COOKIE_SECRET)",
+      "@exwave-nexus/auth: cookieSecret must be at least 32 characters (set EXWAVE_COOKIE_SECRET)",
     );
   const keys = Promise.all(list.map((s) => deriveKey(s, cookieName)));
 

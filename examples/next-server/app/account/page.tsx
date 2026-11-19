@@ -1,4 +1,4 @@
-import { decodePlayerAccessToken } from "@exwave/auth";
+import { decodePlayerAccessToken } from "@exwave-nexus/auth";
 import { redirect } from "next/navigation";
 import { exwave } from "@/lib/exwave";
 import { SignOutButtons, TokenPanel } from "../forms";

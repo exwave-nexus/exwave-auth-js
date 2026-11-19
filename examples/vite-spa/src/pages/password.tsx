@@ -1,5 +1,5 @@
-import type { EmailLink } from "@exwave/auth";
-import { useExwave } from "@exwave/auth/react";
+import type { EmailLink } from "@exwave-nexus/auth";
+import { useExwave } from "@exwave-nexus/auth/react";
 import { useEffect, useState } from "react";
 import { PasswordField, usePasswordPolicy } from "../password-field";
 import { Link, navigate } from "../router";

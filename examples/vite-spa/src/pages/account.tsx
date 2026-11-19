@@ -1,5 +1,5 @@
-import { decodePlayerAccessToken, type Player } from "@exwave/auth";
-import { useExwave } from "@exwave/auth/react";
+import { decodePlayerAccessToken, type Player } from "@exwave-nexus/auth";
+import { useExwave } from "@exwave-nexus/auth/react";
 import { useEffect, useState } from "react";
 import { describeError } from "../errors";
 import { navigate } from "../router";

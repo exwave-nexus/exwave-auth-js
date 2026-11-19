@@ -1,5 +1,5 @@
-import { isExwaveAuthError } from "@exwave/auth";
-import { useExwave } from "@exwave/auth/react";
+import { isExwaveAuthError } from "@exwave-nexus/auth";
+import { useExwave } from "@exwave-nexus/auth/react";
 import { useState } from "react";
 import { describeSignOut } from "../errors";
 import { Link, navigate } from "../router";
