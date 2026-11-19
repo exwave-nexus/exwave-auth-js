@@ -12,8 +12,12 @@ Create a classic personal access token with `read:packages` and add this
 
 ```ini
 @exwave-nexus:registry=https://npm.pkg.github.com
+@exwave:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
+
+The `@exwave` line is for npm 12, which otherwise refuses the aliased tarball
+below (`EALLOWREMOTE`). Drop it when the package moves to npmjs.
 
 Install it under its own name, so imports stay `@exwave/auth` when it moves to
 npmjs:
