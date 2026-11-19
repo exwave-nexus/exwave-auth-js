@@ -69,6 +69,7 @@ jspm_packages/
 
 out
 dist
+publish
 .cache
 
 # Stores VSCode versions used for testing VSCode extensions

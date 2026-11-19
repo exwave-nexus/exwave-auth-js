@@ -1,7 +1,9 @@
 # exwave-auth-js
 
 `@exwave/auth`: managed player auth for websites and game JS glue, plus two
-example apps. Private for now (EXC-294).
+example apps. Private for now (EXC-294): the package is on GitHub Packages as
+`@exwave-nexus/auth`, and [`packages/auth/README.md`](packages/auth/README.md)
+says how to install it.
 
 | Path | What |
 | --- | --- |
@@ -84,3 +86,29 @@ bun test            # library, mock contract, cookie size, bundle budget
 bun run build       # library dist/, both examples
 bun run size        # core min+gz
 ```
+
+## Publish
+
+Releases go to GitHub Packages as `@exwave-nexus/auth`: private, readable with
+this repository's permissions, and scoped to its owner as that registry
+requires. To release:
+
+1. Bump `version` in `packages/auth/package.json` and merge to `main`.
+2. Tag that commit and push the tag:
+
+   ```bash
+   git tag v0.2.0 && git push origin v0.2.0
+   ```
+
+The Release workflow checks the tag matches the version, runs the checks, and
+publishes with the workflow's own token, so no secret is needed. Published
+versions cannot be overwritten, only deleted from the package's settings.
+
+`bun run --cwd packages/auth stage` builds what gets published into
+`packages/auth/publish/`: `dist/`, the README, `LICENSE` and a `package.json`
+whose exports point at `dist/` (the workspace's own one points at `src/`).
+`npm pack --dry-run ./packages/auth/publish` lists the files.
+
+To go public on npmjs as `@exwave/auth`, change `PUBLISH_AS` in
+`packages/auth/stage.ts`, and the registry and token in
+`.github/workflows/release.yml`.

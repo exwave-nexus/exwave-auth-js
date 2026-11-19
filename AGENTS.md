@@ -17,6 +17,8 @@ Keep the core under 6 KB min+gz (`bun run size`, enforced by a test).
 - `bun run lint`, `bun run format` (Biome is the source of truth)
 - `bun run typecheck`, `bun test`, `bun run build`
 - `bun run mock`, `bun run dev:spa`, `bun run dev:next`
+- `bun run --cwd packages/auth stage` (what a release publishes, in
+  `packages/auth/publish/`); releases are `v*` tags, see README → Publish
 
 ## Conventions
 
