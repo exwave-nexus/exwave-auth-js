@@ -39,7 +39,7 @@ const manifest = {
 await rm(out, { recursive: true, force: true });
 await mkdir(out);
 await cp(new URL("dist/", root), new URL("dist/", out), { recursive: true });
-await cp(new URL("README.md", root), new URL("README.md", out));
+await cp(new URL("../../README.md", root), new URL("README.md", out));
 await cp(new URL("../../LICENSE", root), new URL("LICENSE", out));
 await Bun.write(
   new URL("package.json", out),
