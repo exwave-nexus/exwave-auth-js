@@ -48,7 +48,10 @@ describe("publishable keys", () => {
     ["another version", raw(`2|https://a.test|${PLATFORM}`)],
     ["extra parts", raw(`1|https://a.test|${PLATFORM}|x`)],
     ["a bad platform ID", raw("1|https://a.test|not-a-uuid")],
-    ["plain HTTP off localhost", raw(`1|http://auth-prod.exwave.net|${PLATFORM}`)],
+    [
+      "plain HTTP off localhost",
+      raw(`1|http://auth-prod.exwave.net|${PLATFORM}`),
+    ],
     ["a path in the origin", raw(`1|https://a.test/auth|${PLATFORM}`)],
     ["garbage", "exw_pk_%%%"],
   ] as const)
