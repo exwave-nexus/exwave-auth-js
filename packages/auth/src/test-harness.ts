@@ -18,10 +18,13 @@ export async function harness(options: MockAuthOptions = {}) {
   const mock = await createMockAuth({ now, log: () => {}, ...options });
   /** Player API paths (after `players/`) that answer 503 for now. */
   const failing = new Set<string>();
+  /** Calls to the player API, by path after `players/`. */
+  const calls = new Map<string, number>();
   const mockFetch = mock.fetcher();
   const api: typeof fetch = (async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input));
     const path = url.pathname.split("/players/")[1];
+    if (path) calls.set(path, (calls.get(path) ?? 0) + 1);
     if (path && failing.has(path))
       return Response.json(
         { error: "managed_auth_unavailable" },
@@ -86,6 +89,7 @@ export async function harness(options: MockAuthOptions = {}) {
     clock,
     mock,
     failing,
+    calls: (path: string) => calls.get(path) ?? 0,
     jar,
     clients,
     server,

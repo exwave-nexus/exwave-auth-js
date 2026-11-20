@@ -7,23 +7,29 @@ import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 
 export const CORE_BUDGET_BYTES = 6 * 1024;
+/** `./react`: provider, hooks and gates, plus the core they use. React itself is the app's. */
+export const REACT_BUDGET_BYTES = 10 * 1024;
 
-const core = new URL("../packages/auth/src/index.ts", import.meta.url).pathname;
+const src = (path: string) =>
+  new URL(`../packages/auth/src/${path}`, import.meta.url).pathname;
 
-/** What `import { <names> } from "@exwave-nexus/auth"` adds to an app. */
-export async function measureImport(names: string[]) {
+/** What `import { <names> } from "@exwave-nexus/auth<entry>"` adds to an app. */
+export async function measureImport(names: string[], entry = "index.ts") {
   const dir = await mkdtemp(join(tmpdir(), "exwave-size-"));
   try {
-    const entry = join(dir, "entry.ts");
+    const file = join(dir, "entry.ts");
     await writeFile(
-      entry,
-      `export { ${names.join(", ")} } from ${JSON.stringify(core)};\n`,
+      file,
+      names[0] === "*"
+        ? `export * from ${JSON.stringify(src(entry))};\n`
+        : `export { ${names.join(", ")} } from ${JSON.stringify(src(entry))};\n`,
     );
     const result = await Bun.build({
-      entrypoints: [entry],
+      entrypoints: [file],
       target: "browser",
       format: "esm",
       minify: true,
+      external: ["react", "react/*", "react-dom"],
     });
     if (!result.success)
       throw new AggregateError(result.logs, "core build failed");
@@ -39,20 +45,31 @@ export async function measureImport(names: string[]) {
   }
 }
 
-export const MEASURED = {
-  "browser client": ["createExwaveAuth"],
-  "route client": ["createExwaveRouteClient"],
+export const MEASURED: Record<
+  string,
+  { names: string[]; entry?: string; budget: number }
+> = {
+  "browser client": { names: ["createExwaveAuth"], budget: CORE_BUDGET_BYTES },
+  "route client": {
+    names: ["createExwaveRouteClient"],
+    budget: CORE_BUDGET_BYTES,
+  },
+  "./react": {
+    names: ["*"],
+    entry: "react/index.tsx",
+    budget: REACT_BUDGET_BYTES,
+  },
 };
 
 if (import.meta.main) {
   const kb = (bytes: number) => `${(bytes / 1024).toFixed(2)} KB`;
   let over = false;
-  for (const [label, names] of Object.entries(MEASURED)) {
-    const size = await measureImport(names);
+  for (const [label, { names, entry, budget }] of Object.entries(MEASURED)) {
+    const size = await measureImport(names, entry);
     console.log(
-      `@exwave-nexus/auth ${label}: ${kb(size.minified)} min, ${kb(size.gzipped)} min+gz (${size.gzipped} B; budget ${kb(CORE_BUDGET_BYTES)})`,
+      `@exwave-nexus/auth ${label}: ${kb(size.minified)} min, ${kb(size.gzipped)} min+gz (${size.gzipped} B; budget ${kb(budget)})`,
     );
-    over ||= size.gzipped > CORE_BUDGET_BYTES;
+    over ||= size.gzipped > budget;
   }
   if (over) process.exit(1);
 }
