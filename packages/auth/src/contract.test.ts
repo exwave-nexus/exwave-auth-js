@@ -1,14 +1,14 @@
 // The library against the mock's in-memory player API: the contract end to
 // end, for the browser client and the server route handler.
 import { describe, expect, test } from "bun:test";
+import { createMockAuth, type MockAuth } from "@exwave-nexus/auth-mock";
 import { createLocalJWKSet } from "jose";
-import { createExwaveAuth, memoryStorage } from "../packages/auth/src/index";
+import { createExwaveAuth, memoryStorage } from "./index";
 import {
   createExwaveServerAuth,
   handleAuthRequest,
   verifyPlayerAccessToken,
-} from "../packages/auth/src/server/index";
-import { createMockAuth, type MockAuth } from "./mock-auth";
+} from "./server/index";
 
 const APP = "http://localhost:3000";
 const SECRET = "mock-test-cookie-secret-32-chars!!";

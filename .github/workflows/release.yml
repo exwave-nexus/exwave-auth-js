@@ -1,7 +1,8 @@
 name: Release
 
-# Push a tag named after packages/auth's version (v0.1.0) to publish it to
-# GitHub Packages as @exwave-nexus/auth, with the workflow's own token.
+# Push a tag named after the packages' shared version (v0.2.0) to publish
+# @exwave-nexus/auth and @exwave-nexus/auth-mock to GitHub Packages, with the
+# workflow's own token.
 on:
   push:
     tags: ["v*"]
@@ -27,14 +28,9 @@ jobs:
           node-version: 24
           registry-url: https://npm.pkg.github.com
           scope: "@exwave-nexus"
-      - name: Check the tag matches the version
-        run: |
-          version=$(jq -r .version packages/auth/package.json)
-          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match packages/auth version $version"
-            exit 1
-          fi
       - run: bun install --frozen-lockfile
+      - name: Check the tag matches the versions
+        run: bun scripts/check-versions.ts "$GITHUB_REF_NAME"
       - name: Lint (Biome)
         run: bunx biome ci .
       - name: Typecheck
@@ -42,8 +38,19 @@ jobs:
       - name: Test
         run: bun test
       - name: Build and stage
-        run: bun run --cwd packages/auth stage
+        run: bun run stage
       - name: Publish
-        run: npm publish ./packages/auth/publish
+        # Published versions can't be overwritten: skip one that is already
+        # there, so a rerun after a partial failure finishes the rest.
+        run: |
+          for dir in packages/auth packages/auth-mock; do
+            name=$(jq -r .name "$dir/publish/package.json")
+            version=$(jq -r .version "$dir/publish/package.json")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already published"
+            else
+              npm publish "./$dir/publish"
+            fi
+          done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

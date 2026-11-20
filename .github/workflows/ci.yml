@@ -28,6 +28,8 @@ jobs:
         with:
           node-version: 24
       - run: bun install --frozen-lockfile
+      - name: Versions
+        run: bun run check-versions
       - name: Lint (Biome)
         run: bunx biome ci .
       - name: Typecheck
@@ -41,3 +43,5 @@ jobs:
           VITE_EXWAVE_PUBLISHABLE_KEY: exw_pk_MXxodHRwOi8vbG9jYWxob3N0OjQwMTB8NmYxYzJhMTAtNWEzZS00YzJiLTlkNGUtMGExYjJjM2Q0ZTVm
       - name: Core bundle size
         run: bun run size
+      - name: Stage the packages
+        run: bun scripts/stage.ts packages/auth && bun scripts/stage.ts packages/auth-mock
