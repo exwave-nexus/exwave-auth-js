@@ -30,12 +30,12 @@ async function realisticPat() {
     .sign(privateKey);
 }
 
-async function session(overrides: Partial<ServerSession["player"]> = {}) {
+async function session(overrides: Partial<ServerSession["user"]> = {}) {
   return {
     refreshToken: `exw_rt_${"x".repeat(43)}`,
     accessToken: await realisticPat(),
     expiresAt: Date.now() + 900_000,
-    player: {
+    user: {
       id: `managed:${PLATFORM}:${"3".repeat(18)}`,
       userId: "3".repeat(18),
       email: "player@example.com",

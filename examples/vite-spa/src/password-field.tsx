@@ -27,7 +27,7 @@ export function usePasswordPolicy(): PasswordPolicy | null {
 
 /**
  * A new-password input that lists the policy's rules, ticks them off as the
- * player types, and blocks the submit (native validation) until all pass.
+ * user types, and blocks the submit (native validation) until all pass.
  */
 export function PasswordField({
   label,

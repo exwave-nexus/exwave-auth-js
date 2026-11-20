@@ -1,13 +1,13 @@
-import { createPlayerApi, toPlayer } from "../api";
+import { type ApiTokens, createPlayerApi, toUser } from "../api";
 import {
   CONFIG_TTL_MS,
   REFRESH_MARGIN_MS,
   SIGN_OUT_REASON_TTL_MS,
   type SignOutReason,
+  toSignOutReason,
 } from "../client";
 import { ExwaveAuthError, isExwaveAuthError } from "../errors";
 import type {
-  ApiTokens,
   CodeInput,
   PasswordResetConfirmInput,
   PlatformConfig,
@@ -70,7 +70,7 @@ export type RefreshResult =
       session: null;
       cookie: "clear";
       error: ExwaveAuthError;
-      reason: "invalid_refresh_token" | "player_locked";
+      reason: "invalid_refresh_token" | "account_locked";
     };
 
 /** The "signed out because" cookie's lifetime: long enough for the sign-in page to read it. */
@@ -80,7 +80,7 @@ const SIGN_OUT_REASONS: Record<SignOutReason, true> = {
   signed_out: true,
   signed_out_everywhere: true,
   invalid_refresh_token: true,
-  player_locked: true,
+  account_locked: true,
 };
 
 export const isSignOutReason = (value: unknown): value is SignOutReason =>
@@ -108,7 +108,7 @@ export function createExwaveServerAuth(options: ExwaveServerAuthOptions) {
       refreshToken,
       accessToken: tokens.access_token,
       expiresAt: now() + tokens.expires_in * 1000,
-      player: toPlayer(tokens.player),
+      user: toUser(tokens.player),
     };
   }
 
@@ -132,8 +132,8 @@ export function createExwaveServerAuth(options: ExwaveServerAuthOptions) {
       }
       return config.value;
     },
-    /** `players/me` with a PAT. */
-    getPlayer: api.me,
+    /** The user behind a PAT, from `players/me`. */
+    getUser: api.me,
     async signIn(input: SignInInput) {
       return toSession(await api.signIn(input));
     },
@@ -165,16 +165,15 @@ export function createExwaveServerAuth(options: ExwaveServerAuthOptions) {
               cookie: "forward",
             };
       } catch (error) {
-        if (
-          isExwaveAuthError(error) &&
-          (error.code === "invalid_refresh_token" ||
-            error.code === "player_locked")
-        )
+        const reason = isExwaveAuthError(error)
+          ? toSignOutReason(error.code)
+          : undefined;
+        if (reason)
           return {
             session: null,
             cookie: "clear",
-            error,
-            reason: error.code as "invalid_refresh_token" | "player_locked",
+            error: error as ExwaveAuthError,
+            reason,
           };
         throw error;
       }

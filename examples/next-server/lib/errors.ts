@@ -38,15 +38,15 @@ export function describeWeakPassword(
   return `Your password needs ${parts.length ? `${parts.join(", ")} and ${last}` : last}.`;
 }
 
-/** Why the player was signed out, for the sign-in page. */
+/** Why the user was signed out, for the sign-in page. */
 export function describeSignOut(reason: SignOutReason): {
   text: string;
   tone: "error" | "info" | "ok";
 } {
   switch (reason) {
-    case "player_locked":
+    case "account_locked":
       return {
-        text: "This account was locked, so you were signed out. Contact the game's support.",
+        text: "This account was locked, so you were signed out. Contact support.",
         tone: "error",
       };
     case "invalid_refresh_token":
@@ -61,7 +61,7 @@ export function describeSignOut(reason: SignOutReason): {
   }
 }
 
-/** What to tell the player for each API error code. */
+/** What to tell the user for each API error code. */
 export function describeError(
   error: unknown,
   policy?: PasswordPolicy | null,
@@ -73,7 +73,7 @@ export function describeError(
     case "email_not_verified":
       return "Verify your email first: open the link we sent you.";
     case "player_locked":
-      return "This account is locked. Contact the game's support.";
+      return "This account is locked. Contact support.";
     case "rate_limited":
       return `Too many attempts. Try again in ${
         error.retryAfter
@@ -89,7 +89,7 @@ export function describeError(
     case "invalid_code":
       return "This link has expired or was already used.";
     case "sign_up_disabled":
-      return "Sign-up is closed for this game.";
+      return "Sign-up is closed.";
     case "invalid_refresh_token":
       return "Your session ended. Sign in again.";
     case "network_error":

@@ -10,7 +10,7 @@ import { describeRule, describeWeakPassword } from "@/lib/errors";
 
 /**
  * A new-password input that lists the policy's rules (from `GET config`, read
- * by the page on the server), ticks them off as the player types, and blocks
+ * by the page on the server), ticks them off as the user types, and blocks
  * the submit (native validation) until all pass.
  */
 export function PasswordField({

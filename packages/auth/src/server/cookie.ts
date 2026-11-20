@@ -1,5 +1,5 @@
 import { CompactEncrypt, compactDecrypt } from "jose";
-import type { Player } from "../types";
+import type { User } from "../types";
 
 /** What the session cookie holds. The browser cannot read it. */
 export interface ServerSession {
@@ -7,7 +7,7 @@ export interface ServerSession {
   accessToken: string;
   /** PAT expiry, in milliseconds since the epoch. */
   expiresAt: number;
-  player: Player;
+  user: User;
 }
 
 export const DEFAULT_COOKIE_NAME = "exwave_session";
@@ -72,7 +72,7 @@ export function createCookieSealer(
 
   return {
     async seal(session: ServerSession): Promise<string> {
-      const p = session.player;
+      const p = session.user;
       const body: Sealed = {
         v: 1,
         iat: Math.floor(now() / 1000),
@@ -114,7 +114,7 @@ export function createCookieSealer(
             refreshToken: body.rt,
             accessToken: body.at,
             expiresAt: body.exp,
-            player: { id, userId, email, emailVerified, displayName, username },
+            user: { id, userId, email, emailVerified, displayName, username },
           };
         } catch {
           // Try the next secret.

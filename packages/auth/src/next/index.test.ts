@@ -65,12 +65,12 @@ describe("Next.js proxy helper", () => {
     expect(response.headers.getSetCookie()).toEqual([
       expect.stringMatching(/^exwave_session=; Path=\/; Expires=/),
       expect.stringMatching(
-        /^exwave_session_signed_out=player_locked; Path=\/; Expires=[^;]+; Max-Age=300; HttpOnly; SameSite=lax$/,
+        /^exwave_session_signed_out=account_locked; Path=\/; Expires=[^;]+; Max-Age=300; HttpOnly; SameSite=lax$/,
       ),
     ]);
     // This render sees the reason (for a sign-in page) and no session.
     const forwarded = response.headers.get("x-middleware-request-cookie") ?? "";
-    expect(forwarded).toContain("exwave_session_signed_out=player_locked");
+    expect(forwarded).toContain("exwave_session_signed_out=account_locked");
     expect(forwarded).not.toContain(sealed);
   });
 

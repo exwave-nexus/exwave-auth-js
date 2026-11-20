@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "type": "module",
-  "description": "Managed player auth for Exwave platforms: browser, Bun, Node, Next.js and React.",
+  "description": "Exwave managed auth for websites and apps: browser, Bun, Node, Next.js and React.",
   "license": "MIT",
   "repository": {
     "type": "git",

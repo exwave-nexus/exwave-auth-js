@@ -92,7 +92,7 @@ export function CheckEmail({
   );
 }
 
-/** The email link lands here and signs the player in. */
+/** The email link lands here and signs the user in. */
 export function VerifyPage() {
   const { auth } = useExwave();
   const [error, setError] = useState<unknown>(null);
