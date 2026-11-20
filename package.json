@@ -5,12 +5,11 @@
   "packageManager": "bun@1.4.3",
   "workspaces": [
     "packages/*",
-    "examples/*"
+    "packages/create/templates/*"
   ],
   "scripts": {
     "mock": "bun packages/auth-mock/src/cli.ts",
-    "dev:spa": "bun run --cwd examples/vite-spa dev",
-    "dev:next": "bun run --cwd examples/next-server dev",
+    "dev:next": "bun run --cwd packages/create/templates/next dev",
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc -p tsconfig.json && bun run --filter '*' typecheck",
@@ -18,12 +17,17 @@
     "build": "bun run --filter '*' build",
     "size": "bun scripts/bundle-size.ts",
     "stage": "bun run build && bun scripts/stage.ts packages/auth && bun scripts/stage.ts packages/auth-mock",
-    "check-versions": "bun scripts/check-versions.ts"
+    "check-versions": "bun scripts/check-versions.ts",
+    "dev:vite": "bun run --cwd packages/create/templates/vite dev",
+    "registry:build": "bun scripts/registry.ts build",
+    "registry:sync": "bun scripts/registry.ts sync",
+    "registry:check": "bun scripts/registry.ts check"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@types/bun": "1.4.4",
     "jose": "6.2.17",
+    "shadcn": "4.23.0",
     "typescript": "6.0.3"
   }
 }

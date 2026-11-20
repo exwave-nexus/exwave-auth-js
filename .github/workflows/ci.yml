@@ -36,11 +36,16 @@ jobs:
         run: bun run typecheck
       - name: Test
         run: bun test
-      - name: Build
+      - name: Build (packages and templates)
+        # The templates' .env.development holds the mock's key.
         run: bun run build
-        env:
-          # The mock's key, so production builds bundle the whole app.
-          VITE_EXWAVE_PUBLISHABLE_KEY: exw_pk_MXxodHRwOi8vbG9jYWxob3N0OjQwMTB8NmYxYzJhMTAtNWEzZS00YzJiLTlkNGUtMGExYjJjM2Q0ZTVm
+      - name: Registry
+        # The templates' components match registry/exwave, and the built
+        # registry/public/r is up to date.
+        run: |
+          bun run registry:check
+          bun run registry:build
+          git diff --exit-code -- registry/public
       - name: Core bundle size
         run: bun run size
       - name: Stage the packages
