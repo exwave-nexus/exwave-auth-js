@@ -1,0 +1,29 @@
+{
+  "name": "create-exwave",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "description": "Create a Next.js or Vite app with Exwave Auth: npm create exwave@latest",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/exwave-nexus/exwave-auth-js.git",
+    "directory": "packages/create"
+  },
+  "bin": {
+    "create-exwave": "./src/index.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "bun build.ts",
+    "stage": "bun build.ts && bun ../../scripts/stage.ts ."
+  },
+  "devDependencies": {
+    "@exwave-nexus/auth": "workspace:*",
+    "@types/bun": "1.4.4",
+    "typescript": "6.0.3"
+  }
+}

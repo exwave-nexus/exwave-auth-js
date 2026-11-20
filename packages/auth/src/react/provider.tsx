@@ -196,6 +196,8 @@ export function ExwaveProvider(props: ExwaveProviderProps) {
 export function useExwave(): ExwaveContextValue {
   const value = useContext(ExwaveContext);
   if (!value)
-    throw new Error("useExwave() must be used inside <ExwaveProvider>");
+    throw new Error(
+      "useExwave() must be used inside <ExwaveProvider>: wrap your app in it (in Next.js, app/layout.tsx with @exwave-nexus/auth/next/client). See https://www.exwave.net/docs/auth/get-started/",
+    );
   return value;
 }

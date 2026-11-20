@@ -37,8 +37,9 @@ jobs:
         run: bun run typecheck
       - name: Test
         run: bun test
-      - name: Build and stage
-        run: bun run stage
+      - name: Build, stage and smoke-test
+        # Smoke stages too: it installs the tarballs the next step publishes.
+        run: bun run smoke
       - name: Publish
         # Published versions can't be overwritten: skip one that is already
         # there, so a rerun after a partial failure finishes the rest.
