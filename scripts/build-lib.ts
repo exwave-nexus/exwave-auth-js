@@ -85,13 +85,12 @@ export async function buildLibrary(options: LibraryBuild) {
   }
 
   // Bun leaves "use client" below the hoisted imports, where Next.js ignores
-  // it. Move it to the first line and shift the source map down one line.
+  // it, or drops it when the module's code moved to a shared chunk. Put it on
+  // the first line and shift the source map down one line.
   const directive = '"use client";\n';
   for (const path of options.useClient ?? []) {
     const entry = Bun.file(new URL(path, dist));
     const code = await entry.text();
-    if (!code.includes(directive))
-      throw new Error(`dist/${path} lost its "use client" directive`);
     await Bun.write(entry, directive + code.replace(directive, ""));
     await shiftSourceMap(new URL(`${path}.map`, dist), 1);
   }

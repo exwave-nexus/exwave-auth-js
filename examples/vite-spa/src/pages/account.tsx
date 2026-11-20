@@ -37,7 +37,7 @@ export function AccountPage() {
   const callApi = async () => {
     setBusy(true);
     try {
-      setApi({ user: await auth.getUser() });
+      if (auth.mode === "browser") setApi({ user: await auth.getUser() });
     } catch (error) {
       setApi({ error: describeError(error) });
     } finally {

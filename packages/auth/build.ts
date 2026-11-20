@@ -8,15 +8,19 @@ await buildLibrary({
   dir: new URL("./", import.meta.url),
   entrypoints: [
     "src/index.ts",
+    "src/messages.ts",
+    "src/react/index.tsx",
     "src/server/index.ts",
     "src/next/index.ts",
-    "src/react/index.tsx",
+    "src/next/client.tsx",
   ],
   external: ["jose", "next", "next/*", "react", "react/*", "react-dom"],
-  useClient: ["react/index.js"],
+  useClient: ["react/index.js", "next/client.js"],
   forbid: {
     "index.js": [...FRAMEWORKS, "jose"],
+    "messages.js": [...FRAMEWORKS, "jose"],
     "react/index.js": ["next", "jose"],
     "server/index.js": FRAMEWORKS,
+    "next/client.js": ["jose"],
   },
 });

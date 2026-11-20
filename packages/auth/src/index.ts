@@ -3,14 +3,21 @@ import type { PlayerAccessTokenClaims } from "./types";
 
 export {
   type AuthChangeEvent,
+  type AuthChangeInfo,
   type AuthChangeListener,
   createExwaveAuth,
   type ExwaveAuth,
+  type ExwaveAuthClient,
   type ExwaveAuthOptions,
   REFRESH_MARGIN_MS,
   SIGN_OUT_REASON_TTL_MS,
   type SignOutReason,
 } from "./client";
+export {
+  type EmailLinkParams,
+  parseEmailLink,
+  withoutEmailLink,
+} from "./email-link";
 export {
   ExwaveAuthError,
   type ExwaveAuthErrorCode,
@@ -22,6 +29,11 @@ export {
   encodePublishableKey,
   type PublishableKey,
 } from "./publishable-key";
+export {
+  createExwaveRouteClient,
+  type ExwaveRouteClient,
+  type ExwaveRouteClientOptions,
+} from "./route-client";
 export {
   memoryStorage,
   type StorageAdapter,
