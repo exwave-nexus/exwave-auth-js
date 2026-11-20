@@ -4,7 +4,7 @@
   "title": "User button",
   "description": "A Sign in button when signed out; an avatar menu with the account and sign-out when signed in.",
   "dependencies": [
-    "@exwave-nexus/auth@^0.1.1"
+    "@exwave-nexus/auth@^0.2.0"
   ],
   "registryDependencies": [
     "button",

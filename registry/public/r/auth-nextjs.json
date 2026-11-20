@@ -4,7 +4,7 @@
   "title": "Exwave Auth for Next.js",
   "description": "Sign-in, sign-up, email verification and password reset pages for the App Router, with the /api/exwave routes, the session proxy and every component.",
   "dependencies": [
-    "@exwave-nexus/auth@^0.1.1",
+    "@exwave-nexus/auth@^0.2.0",
     "lucide-react"
   ],
   "registryDependencies": [
