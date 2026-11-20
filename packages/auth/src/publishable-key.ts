@@ -6,7 +6,7 @@ const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
 
 export interface PublishableKey {
   version: 1;
-  /** Origin of the Exwave Auth service, such as `https://auth.exwave.net`. */
+  /** Origin of the Exwave Auth service, such as `https://auth-prod.exwave.net`. */
   authOrigin: string;
   platformId: string;
 }

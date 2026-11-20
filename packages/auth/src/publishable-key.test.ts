@@ -8,14 +8,14 @@ const raw = (text: string) =>
 describe("publishable keys", () => {
   test("decode what Nexus encodes", () => {
     const key = encodePublishableKey({
-      authOrigin: "https://auth.exwave.net",
+      authOrigin: "https://auth-prod.exwave.net",
       platformId: PLATFORM,
     });
     expect(key.startsWith("exw_pk_")).toBe(true);
     expect(key).not.toContain("=");
     expect(decodePublishableKey(key)).toEqual({
       version: 1,
-      authOrigin: "https://auth.exwave.net",
+      authOrigin: "https://auth-prod.exwave.net",
       platformId: PLATFORM,
     });
   });
@@ -33,9 +33,9 @@ describe("publishable keys", () => {
   });
 
   test("accept padding, a trailing slash and an upper-case ID", () => {
-    const key = `exw_pk_${Buffer.from(`1|https://auth.exwave.net/|${PLATFORM.toUpperCase()}`).toString("base64")}`;
+    const key = `exw_pk_${Buffer.from(`1|https://auth-prod.exwave.net/|${PLATFORM.toUpperCase()}`).toString("base64")}`;
     expect(decodePublishableKey(key)).toMatchObject({
-      authOrigin: "https://auth.exwave.net",
+      authOrigin: "https://auth-prod.exwave.net",
       platformId: PLATFORM,
     });
   });
@@ -48,7 +48,10 @@ describe("publishable keys", () => {
     ["another version", raw(`2|https://a.test|${PLATFORM}`)],
     ["extra parts", raw(`1|https://a.test|${PLATFORM}|x`)],
     ["a bad platform ID", raw("1|https://a.test|not-a-uuid")],
-    ["plain HTTP off localhost", raw(`1|http://auth.exwave.net|${PLATFORM}`)],
+    [
+      "plain HTTP off localhost",
+      raw(`1|http://auth-prod.exwave.net|${PLATFORM}`),
+    ],
     ["a path in the origin", raw(`1|https://a.test/auth|${PLATFORM}`)],
     ["garbage", "exw_pk_%%%"],
   ] as const)
