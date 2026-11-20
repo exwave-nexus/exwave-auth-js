@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: exwave-root
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: oven-sh/setup-bun@v2.2.0
