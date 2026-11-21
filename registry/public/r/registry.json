@@ -1,0 +1,375 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "exwave",
+  "homepage": "https://www.exwave.net/docs/auth/",
+  "items": [
+    {
+      "name": "sign-in-form",
+      "type": "registry:component",
+      "title": "Sign in form",
+      "description": "Email or username and password, with the reason the last session ended and a new verification link when needed.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "card"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/sign-in-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-in-form.tsx"
+        },
+        {
+          "path": "registry/exwave/auth-link.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/auth-link.tsx"
+        }
+      ]
+    },
+    {
+      "name": "sign-up-form",
+      "type": "registry:component",
+      "title": "Sign up form",
+      "description": "Name, email and password with the platform's rules ticked off as you type, then a check-your-email step with resend.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "card"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/sign-up-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-up-form.tsx"
+        },
+        {
+          "path": "registry/exwave/auth-link.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/auth-link.tsx"
+        },
+        {
+          "path": "registry/exwave/password-rules.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/password-rules.tsx"
+        }
+      ]
+    },
+    {
+      "name": "verify-email",
+      "type": "registry:component",
+      "title": "Verify email",
+      "description": "The page verification emails link to: verifies the email, signs in and moves on.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1"
+      ],
+      "registryDependencies": [
+        "card"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/verify-email.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/verify-email.tsx"
+        },
+        {
+          "path": "registry/exwave/auth-link.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/auth-link.tsx"
+        }
+      ]
+    },
+    {
+      "name": "forgot-password-form",
+      "type": "registry:component",
+      "title": "Forgot password form",
+      "description": "Sends a link to choose a new password.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "card"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/forgot-password-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/forgot-password-form.tsx"
+        },
+        {
+          "path": "registry/exwave/auth-link.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/auth-link.tsx"
+        }
+      ]
+    },
+    {
+      "name": "reset-password-form",
+      "type": "registry:component",
+      "title": "Reset password form",
+      "description": "The page password reset emails link to: choose a new password, then sign in.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "card"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/reset-password-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/reset-password-form.tsx"
+        },
+        {
+          "path": "registry/exwave/auth-link.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/auth-link.tsx"
+        },
+        {
+          "path": "registry/exwave/password-rules.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/password-rules.tsx"
+        }
+      ]
+    },
+    {
+      "name": "sign-out-button",
+      "type": "registry:component",
+      "title": "Sign out button",
+      "description": "Signs out here, or on every device.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1"
+      ],
+      "registryDependencies": [
+        "button"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/sign-out-button.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-out-button.tsx"
+        }
+      ]
+    },
+    {
+      "name": "user-button",
+      "type": "registry:component",
+      "title": "User button",
+      "description": "A Sign in button when signed out; an avatar menu with the account and sign-out when signed in.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1"
+      ],
+      "registryDependencies": [
+        "button",
+        "avatar",
+        "dropdown-menu"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/user-button.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/user-button.tsx"
+        }
+      ]
+    },
+    {
+      "name": "auth-nextjs",
+      "type": "registry:block",
+      "title": "Exwave Auth for Next.js",
+      "description": "Sign-in, sign-up, email verification and password reset pages for the App Router, with the /api/exwave routes, the session proxy and every component.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "card",
+        "avatar",
+        "dropdown-menu"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/sign-in-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-in-form.tsx"
+        },
+        {
+          "path": "registry/exwave/auth-link.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/auth-link.tsx"
+        },
+        {
+          "path": "registry/exwave/sign-up-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-up-form.tsx"
+        },
+        {
+          "path": "registry/exwave/password-rules.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/password-rules.tsx"
+        },
+        {
+          "path": "registry/exwave/verify-email.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/verify-email.tsx"
+        },
+        {
+          "path": "registry/exwave/forgot-password-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/forgot-password-form.tsx"
+        },
+        {
+          "path": "registry/exwave/reset-password-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/reset-password-form.tsx"
+        },
+        {
+          "path": "registry/exwave/sign-out-button.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-out-button.tsx"
+        },
+        {
+          "path": "registry/exwave/user-button.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/user-button.tsx"
+        },
+        {
+          "path": "packages/create/templates/next/app/(auth)/sign-in/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/sign-in/page.tsx"
+        },
+        {
+          "path": "packages/create/templates/next/app/(auth)/sign-up/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/sign-up/page.tsx"
+        },
+        {
+          "path": "packages/create/templates/next/app/(auth)/verify/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/verify/page.tsx"
+        },
+        {
+          "path": "packages/create/templates/next/app/(auth)/forgot-password/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/forgot-password/page.tsx"
+        },
+        {
+          "path": "packages/create/templates/next/app/(auth)/reset-password/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/reset-password/page.tsx"
+        },
+        {
+          "path": "packages/create/templates/next/app/(auth)/layout.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/layout.tsx"
+        },
+        {
+          "path": "packages/create/templates/next/app/api/exwave/[...action]/route.ts",
+          "type": "registry:file",
+          "target": "app/api/exwave/[...action]/route.ts"
+        },
+        {
+          "path": "packages/create/templates/next/lib/exwave.ts",
+          "type": "registry:lib",
+          "target": "@lib/exwave.ts"
+        },
+        {
+          "path": "packages/create/templates/next/proxy.ts",
+          "type": "registry:file",
+          "target": "~/proxy.ts"
+        }
+      ],
+      "envVars": {
+        "NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY": "exw_pk_from_nexus",
+        "EXWAVE_COOKIE_SECRET": ""
+      },
+      "docs": "Set NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) and EXWAVE_COOKIE_SECRET (openssl rand -base64 32) in .env.local, then wrap app/layout.tsx's body in <ExwaveProvider initialState={await exwave.getAuthState()}> from @exwave-nexus/auth/next/client. Guide: https://www.exwave.net/docs/auth/get-started/"
+    },
+    {
+      "name": "auth-react",
+      "type": "registry:block",
+      "title": "Exwave Auth for React (Vite)",
+      "description": "Every sign-in, sign-up, email verification and password reset component, for a React app that talks to Exwave Auth from the browser.",
+      "dependencies": [
+        "@exwave-nexus/auth@^0.1.1",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "card",
+        "avatar",
+        "dropdown-menu"
+      ],
+      "files": [
+        {
+          "path": "registry/exwave/sign-in-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-in-form.tsx"
+        },
+        {
+          "path": "registry/exwave/auth-link.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/auth-link.tsx"
+        },
+        {
+          "path": "registry/exwave/sign-up-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-up-form.tsx"
+        },
+        {
+          "path": "registry/exwave/password-rules.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/password-rules.tsx"
+        },
+        {
+          "path": "registry/exwave/verify-email.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/verify-email.tsx"
+        },
+        {
+          "path": "registry/exwave/forgot-password-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/forgot-password-form.tsx"
+        },
+        {
+          "path": "registry/exwave/reset-password-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/reset-password-form.tsx"
+        },
+        {
+          "path": "registry/exwave/sign-out-button.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-out-button.tsx"
+        },
+        {
+          "path": "registry/exwave/user-button.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/user-button.tsx"
+        }
+      ],
+      "envVars": {
+        "VITE_EXWAVE_PUBLISHABLE_KEY": "exw_pk_from_nexus"
+      },
+      "docs": "Set VITE_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) in .env.local, then wrap your app in <ExwaveProvider publishableKey={import.meta.env.VITE_EXWAVE_PUBLISHABLE_KEY} navigate={yourRouterNavigate}> from @exwave-nexus/auth/react, and give each form a route. Guide: https://www.exwave.net/docs/auth/get-started/"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "sign-out-button",
+  "title": "Sign out button",
+  "description": "Signs out here, or on every device.",
+  "dependencies": [
+    "@exwave-nexus/auth@^0.1.1"
+  ],
+  "registryDependencies": [
+    "button"
+  ],
+  "files": [
+    {
+      "path": "registry/exwave/sign-out-button.tsx",
+      "content": "\"use client\";\n\nimport { useExwave, useSignOut } from \"@exwave-nexus/auth/react\";\nimport type { ComponentProps } from \"react\";\nimport { Button } from \"@/components/ui/button\";\n\n/** Signs out here, or on every device with `everywhere`, then goes to `paths.afterSignOut`. */\nexport function SignOutButton({\n  everywhere = false,\n  children,\n  ...props\n}: ComponentProps<typeof Button> & { everywhere?: boolean }) {\n  const { navigate, paths } = useExwave();\n  const signOut = useSignOut();\n  return (\n    <Button\n      variant=\"outline\"\n      disabled={signOut.pending}\n      title={signOut.message ?? undefined}\n      onClick={async () => {\n        await signOut.run({ everywhere });\n        navigate(paths.afterSignOut, { replace: true });\n      }}\n      {...props}\n    >\n      {children ?? (everywhere ? \"Sign out everywhere\" : \"Sign out\")}\n    </Button>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/exwave/sign-out-button.tsx"
+    }
+  ],
+  "type": "registry:component"
+}

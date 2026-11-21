@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "verify-email",
+  "title": "Verify email",
+  "description": "The page verification emails link to: verifies the email, signs in and moves on.",
+  "dependencies": [
+    "@exwave-nexus/auth@^0.1.1"
+  ],
+  "registryDependencies": [
+    "card"
+  ],
+  "files": [
+    {
+      "path": "registry/exwave/verify-email.tsx",
+      "content": "\"use client\";\n\nimport { useEmailLink, useExwave } from \"@exwave-nexus/auth/react\";\nimport { type ComponentProps, useEffect } from \"react\";\nimport { AuthLink } from \"@/components/exwave/auth-link\";\nimport {\n  Card,\n  CardDescription,\n  CardHeader,\n  CardTitle,\n} from \"@/components/ui/card\";\nimport { cn } from \"@/lib/utils\";\n\n/** The page verification emails link to: verifies, signs in, then moves on. */\nexport function VerifyEmail({ className, ...props }: ComponentProps<\"div\">) {\n  const { navigate, paths } = useExwave();\n  const link = useEmailLink();\n\n  useEffect(() => {\n    if (link.status === \"verified\")\n      navigate(paths.afterSignIn, { replace: true });\n  }, [link.status, navigate, paths.afterSignIn]);\n\n  const [title, description] =\n    link.status === \"error\"\n      ? [\"This link didn't work\", link.message]\n      : link.status === \"none\"\n        ? [\n            \"Verify your email\",\n            \"Open this page from the link in your verification email.\",\n          ]\n        : link.status === \"verified\"\n          ? [\"Email verified\", \"You're signed in.\"]\n          : [\"Verifying your email…\", \"This only takes a moment.\"];\n\n  return (\n    <div className={cn(\"flex flex-col gap-6\", className)} {...props}>\n      <Card>\n        <CardHeader>\n          <CardTitle className=\"text-2xl\" role=\"status\">\n            {title}\n          </CardTitle>\n          <CardDescription>\n            {description}{\" \"}\n            {(link.status === \"error\" || link.status === \"none\") && (\n              <AuthLink\n                href={paths.signIn}\n                className=\"underline underline-offset-4\"\n              >\n                Go to sign in\n              </AuthLink>\n            )}\n          </CardDescription>\n        </CardHeader>\n      </Card>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/exwave/verify-email.tsx"
+    },
+    {
+      "path": "registry/exwave/auth-link.tsx",
+      "content": "\"use client\";\n\nimport { useExwave } from \"@exwave-nexus/auth/react\";\nimport type { ComponentProps, MouseEvent } from \"react\";\n\n/** A link between auth pages that moves the way your app does (the provider's `navigate`). */\nexport function AuthLink({\n  href,\n  onClick,\n  ...props\n}: ComponentProps<\"a\"> & { href: string }) {\n  const { navigate } = useExwave();\n  const follow = (event: MouseEvent<HTMLAnchorElement>) => {\n    onClick?.(event);\n    if (\n      event.defaultPrevented ||\n      event.button !== 0 ||\n      event.metaKey ||\n      event.ctrlKey ||\n      event.shiftKey ||\n      event.altKey ||\n      props.target\n    )\n      return;\n    event.preventDefault();\n    navigate(href);\n  };\n  return <a href={href} onClick={follow} {...props} />;\n}\n\n/** `?redirect=/path` from the address bar when it stays on this site, else `fallback`. */\nexport function redirectTarget(fallback: string): string {\n  if (typeof location === \"undefined\") return fallback;\n  const to = new URLSearchParams(location.search).get(\"redirect\");\n  return to?.startsWith(\"/\") && !to.startsWith(\"//\") && !to.startsWith(\"/\\\\\")\n    ? to\n    : fallback;\n}\n",
+      "type": "registry:component",
+      "target": "@components/exwave/auth-link.tsx"
+    }
+  ],
+  "type": "registry:component"
+}
