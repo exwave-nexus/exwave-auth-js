@@ -2,10 +2,13 @@
 // the route client (through handleAuthRequest), so hooks and components can
 // count on both behaving the same.
 import { describe, expect, test } from "bun:test";
-import type { AuthChangeEvent, SignOutReason } from "./client";
-import { ExwaveAuthError } from "./errors";
-import { type ClientMode, harness } from "./test-harness";
-import type { Session } from "./types";
+import {
+  type AuthChangeEvent,
+  ExwaveAuthError,
+  type Session,
+  type SignOutReason,
+} from "@exwave-nexus/auth";
+import { type ClientMode, harness } from "./harness";
 
 const PLAYER = { login: "player1", password: "Password123!" };
 const NEW_USER = {

@@ -1,0 +1,23 @@
+{
+  "name": "exwave-auth-tests",
+  "private": true,
+  "type": "module",
+  "description": "The packages tested together, through their public entry points: the clients, the route handler, Next.js and React against @exwave-nexus/auth-mock.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@exwave-nexus/auth": "workspace:*",
+    "@exwave-nexus/auth-mock": "workspace:*",
+    "@happy-dom/global-registrator": "21.0.4",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@types/bun": "1.4.4",
+    "@types/react": "19.3.0",
+    "jose": "6.2.17",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "6.0.3"
+  }
+}

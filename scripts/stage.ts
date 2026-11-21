@@ -9,7 +9,9 @@ import { cp, mkdir, readdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const REGISTRY = "https://npm.pkg.github.com";
+// Public on npm: scoped packages would otherwise default to private, which
+// a free npm org can't publish.
+const REGISTRY = "https://registry.npmjs.org";
 
 type Manifest = Record<string, unknown> & {
   name: string;
@@ -89,7 +91,8 @@ export async function stage(dir: URL) {
       const base = built(path);
       if (!base) throw new Error(`bin["${name}"]: unexpected path ${path}`);
       await exists(`${base}.js`);
-      bin[name] = `${base}.js`;
+      // npm wants bin paths without the leading "./" that exports need.
+      bin[name] = `${base.slice(2)}.js`;
     }
   }
 
@@ -107,7 +110,7 @@ export async function stage(dir: URL) {
     peerDependencies: pinWorkspace(source.peerDependencies, versions),
     peerDependenciesMeta: source.peerDependenciesMeta,
     engines: source.engines,
-    publishConfig: { registry: REGISTRY },
+    publishConfig: { registry: REGISTRY, access: "public" },
   };
 
   await rm(out, { recursive: true, force: true });

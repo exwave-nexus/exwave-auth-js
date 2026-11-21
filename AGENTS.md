@@ -14,6 +14,9 @@ Bun workspaces:
   playgrounds and workspace members.
 - `registry/`: the shadcn registry. `registry/exwave/*` are the components;
   `registry/public/r/*` is the built JSON the website serves.
+- `tests/`: the packages tested together (private, never published): the
+  clients, the route handler, Next.js and React against the mock, through
+  `@exwave-nexus/auth`'s public entry points.
 - `scripts/`: the shared build, stage, version, registry, bundle-size and
   smoke scripts.
 
@@ -46,11 +49,13 @@ min+gz and `./react` under 10 KB (`bun run size`, enforced by a test).
 ## Conventions
 
 Strict TypeScript, ES modules, kebab-case files, tests next to the code as
-`*.test.ts(x)` run by `bun test`. Tests use the fakes in
-`packages/auth/src/test-utils.ts` (clock, Web Locks, BroadcastChannel, shared
-storage), `packages/auth/src/test-harness.ts` (both clients, the route client
-through `handleAuthRequest`) or `@exwave-nexus/auth-mock`; never the network.
-React tests register happy-dom for their own file only.
+`*.test.ts(x)` run by `bun test`; never the network. A package's own tests
+use only its own code and fakes (`packages/auth/src/test-utils.ts`: clock,
+Web Locks, BroadcastChannel, shared storage). `@exwave-nexus/auth` never
+depends on `@exwave-nexus/auth-mock`, not even for development (the mock
+depends on it): tests that need the mock go in `tests/`, where
+`tests/harness.ts` sets up both clients, the route client through
+`handleAuthRequest`. React tests register happy-dom for their own file only.
 
 Each package builds with `scripts/build-lib.ts`. Its `forbid` lists keep
 React, Next.js and jose out of the entries that must not need them; the build
@@ -75,12 +80,12 @@ Concise, imperative commit subjects. PRs say why, and how it was verified.
 
 ## Releases
 
-The packages share one version. Bump `version` in every
-`packages/*/package.json`, merge to `main`, then push a matching tag
+The packages share one version and are public on npm. Bump `version` in
+every `packages/*/package.json`, merge to `main`, then push a matching tag
 (`git tag v0.2.0 && git push origin v0.2.0`). The Release workflow checks the
 tag, runs the checks and the smoke test, stages, and publishes
-`@exwave-nexus/auth` and `@exwave-nexus/auth-mock` to GitHub Packages with the
-workflow's token, skipping any version already published. Published versions
-can't be overwritten. `create-exwave` is unscoped, so it can only be published
-to npmjs. After a release, the website copies `registry/public/r` (see its
+`@exwave-nexus/auth`, `@exwave-nexus/auth-mock` and `create-exwave` with the
+`NPM_TOKEN` repository secret (a granular npm token that can publish them),
+skipping any version already published. Published versions can't be
+overwritten. After a release, the website copies `registry/public/r` (see its
 `scripts/sync-registry.ts`).
