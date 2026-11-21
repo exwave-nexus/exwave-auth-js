@@ -1,305 +1,233 @@
 # @exwave-nexus/auth
 
-Sign users in to your website or app with Exwave Auth: in the browser, with
-React, with Next.js, or on your own server. Games can get a player access
-token from the same session.
+Sign users in to your website or app with Exwave Auth: sign-up, email
+verification, sign-in, password reset and sessions, with Next.js, React or
+plain JavaScript. Games can get a player access token from the same session.
 
-## Install
+Full guide: <https://www.exwave.net/docs/auth/get-started/>
 
-The package is private on GitHub Packages. Add an `.npmrc` next to your
-`package.json`, with a GitHub token that has the `read:packages` scope:
+## Start a new app
 
-```ini
-@exwave-nexus:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```bash
+npm create exwave@latest my-app -- --template next --key exw_pk_...
 ```
 
-Then install it:
+`--template next` makes a Next.js app (the session lives in an httpOnly
+cookie). `--template vite` makes a React app (the browser talks to Exwave
+Auth). Your publishable key is in **Nexus → Auth**: it holds no secret. Leave
+`--key` out to start against a local mock.
+
+In **Nexus → Auth → Settings**, add `http://localhost:3000` (or `:5173`) to the
+Redirect URLs, so verification and password reset links can land on your app.
+
+## Add it to an existing app
+
+The sign-in, sign-up, verification and password reset screens are
+[shadcn](https://ui.shadcn.com) components you copy into your app and change as
+you like.
+
+### Next.js (App Router)
 
 ```bash
 npm install @exwave-nexus/auth
+npx shadcn@latest add https://www.exwave.net/r/auth-nextjs.json
 ```
 
-## Quick start
-
-Copy your publishable key from **Nexus → Managed auth**. It holds no secret, so
-it's safe in browser code.
-
-```ts
-import { createExwaveAuth } from "@exwave-nexus/auth";
-
-const auth = createExwaveAuth({
-  publishableKey: "exw_pk_...",
-});
-
-await auth.signIn({
-  login: "player@example.com", // email or username
-  password: "...",
-});
-
-const token = await auth.getPlayerAccessToken();
-```
-
-`getPlayerAccessToken()` returns a player access token for a game: always
-valid for at least a minute, and refreshed for you. Send it to your game
-servers as `Authorization: Bearer <token>`.
-
-To follow sign-ins and sign-outs, in every open tab:
-
-```ts
-auth.onAuthStateChange((event, session) => {
-  if (event === "SIGNED_OUT") {
-    showSignIn();
-  }
-});
-```
-
-## Sign-up
-
-Sign-up sends a verification email. The link in it opens your site, and **your
-page has to finish the job** by calling `handleEmailLink()`:
-
-```ts
-await auth.signUp({
-  email: "player@example.com",
-  password: "...",
-  displayName: "Player One",
-  redirectTo: `${location.origin}/verify`,
-});
-```
-
-```ts
-// On /verify
-const link = await auth.handleEmailLink();
-
-if (link?.type === "email_verified") {
-  // The user is verified and signed in.
-}
-```
-
-`redirectTo` must be on the same domain as your Site URL or one of your
-redirect URLs, in **Nexus → Managed auth → Settings**. Without it, the link
-opens your Site URL.
-
-To show the platform's password rules on your form:
-
-```ts
-import { checkPassword } from "@exwave-nexus/auth";
-
-const { passwordPolicy } = await auth.getConfig();
-
-checkPassword("hunter2", passwordPolicy);
-// ["min_length", "uppercase", "symbol"]
-```
-
-## Password reset
-
-Same idea: the email link opens your page, which sets the new password.
-
-```ts
-await auth.resetPassword({
-  email: "player@example.com",
-  redirectTo: `${location.origin}/reset-password`,
-});
-```
-
-```ts
-// On /reset-password
-const link = await auth.handleEmailLink();
-
-if (link?.type === "password_reset") {
-  await auth.confirmPasswordReset({
-    userId: link.userId,
-    code: link.code,
-    password: newPassword,
-  });
-}
-```
-
-## React
-
-```tsx
-import { ExwaveProvider, useExwave } from "@exwave-nexus/auth/react";
-
-export function App() {
-  return (
-    <ExwaveProvider publishableKey="exw_pk_...">
-      <Account />
-    </ExwaveProvider>
-  );
-}
-
-function Account() {
-  const { auth, isLoaded, user } = useExwave();
-
-  if (!isLoaded) return null;
-  if (!user) return <SignInForm />;
-
-  return (
-    <>
-      <p>Hi {user.displayName}</p>
-      <button type="button" onClick={() => auth.signOut()}>
-        Sign out
-      </button>
-    </>
-  );
-}
-```
-
-`auth` is the same client as in the quick start, so sign-up and email links
-work the same way.
-
-## Next.js
-
-The session lives in an httpOnly cookie, and the browser never sees a refresh
-token. Set two environment variables:
+That adds the screens, their pages, `app/api/exwave/[...action]/route.ts`,
+`lib/exwave.ts` and `proxy.ts`. Then set the environment and the provider:
 
 ```bash
+# .env.local
 NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY=exw_pk_...
-EXWAVE_COOKIE_SECRET=... # openssl rand -base64 32
-```
-
-Then add three files:
-
-```ts
-// lib/exwave.ts
-import { createExwaveNext } from "@exwave-nexus/auth/next";
-
-export const exwave = createExwaveNext();
-```
-
-```ts
-// app/api/exwave/[...action]/route.ts
-import { exwave } from "@/lib/exwave";
-
-export const { GET, POST } = exwave.routeHandlers();
-```
-
-```ts
-// proxy.ts
-import type { NextRequest } from "next/server";
-import { exwave } from "@/lib/exwave";
-
-export function proxy(request: NextRequest) {
-  return exwave.proxy(request);
-}
-
-export const config = {
-  matcher: ["/((?!api/exwave|_next/static|_next/image|favicon.ico).*)"],
-};
-```
-
-Sign in from a Server Function, and read the user in a Server Component:
-
-```ts
-// app/actions.ts
-"use server";
-
-import { exwave } from "@/lib/exwave";
-
-export async function signIn(login: string, password: string) {
-  await exwave.signIn({ login, password });
-}
+EXWAVE_COOKIE_SECRET=...   # openssl rand -base64 32
 ```
 
 ```tsx
-// app/page.tsx
+// app/layout.tsx
+import { ExwaveProvider } from "@exwave-nexus/auth/next/client";
 import { exwave } from "@/lib/exwave";
 
-export default async function Home() {
-  const user = await exwave.getUser();
-
-  return <p>{user ? `Hi ${user.displayName}` : "Signed out"}</p>;
-}
-```
-
-Verification emails open `/verify`. Finish there from a form, since only a
-Server Function can set the session cookie:
-
-```tsx
-// app/verify/page.tsx
-import { redirect } from "next/navigation";
-import { exwave } from "@/lib/exwave";
-
-type Props = {
-  searchParams: Promise<{ uid?: string; exwave_verify?: string }>;
-};
-
-export default async function VerifyPage({ searchParams }: Props) {
-  const { uid = "", exwave_verify: code = "" } = await searchParams;
-
-  async function verify() {
-    "use server";
-    await exwave.verifyEmail({ userId: uid, code });
-    redirect("/");
-  }
-
+export default async function RootLayout({ children }) {
   return (
-    <form action={verify}>
-      <button type="submit">Verify my email</button>
+    <html lang="en">
+      <body>
+        <ExwaveProvider initialState={await exwave.getAuthState()}>
+          {children}
+        </ExwaveProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+Read the user in Server Components, Server Functions and Route Handlers:
+
+```ts
+const user = await exwave.getUser(); // null when signed out
+```
+
+### React (Vite, or any single-page app)
+
+```bash
+npm install @exwave-nexus/auth
+npx shadcn@latest add https://www.exwave.net/r/auth-react.json
+```
+
+```tsx
+import { ExwaveProvider } from "@exwave-nexus/auth/react";
+
+<ExwaveProvider
+  publishableKey={import.meta.env.VITE_EXWAVE_PUBLISHABLE_KEY}
+  navigate={(to) => router.navigate(to)} // your router
+>
+  <App />
+</ExwaveProvider>;
+```
+
+Then route `/sign-in`, `/sign-up`, `/verify`, `/forgot-password` and
+`/reset-password` to `<SignInForm />`, `<SignUpForm />`, `<VerifyEmail />`,
+`<ForgotPasswordForm />` and `<ResetPasswordForm />`. Pass `paths` to the
+provider to use other URLs.
+
+## Your own screens: hooks
+
+The components are built on hooks you can use with your own markup. Each
+action has `run()`, which never throws, plus `pending`, `error` and `message`
+(the error in words).
+
+| Hook | For |
+| --- | --- |
+| `useExwave()` | `user`, `isSignedIn`, `isLoaded`, `signOutReason`, `navigate`, `paths` |
+| `useSignIn()` | Sign-in, and `unverifiedEmail` to offer a new link |
+| `useSignUp()` | Sign-up, then `step: "check_email"` with `resend` |
+| `useEmailLink()` | The page an email link opens: verifies, or hands back the reset code |
+| `usePasswordReset()` | `request` a link, then `confirm` the new password |
+| `useSignOut()` | Sign out, here or `{ everywhere: true }` |
+| `usePasswordCheck()` | The platform's password rules, ticked off as the user types |
+| `<SignedIn>`, `<SignedOut>` | Render once the session is known |
+
+```tsx
+import { useSignIn } from "@exwave-nexus/auth/react";
+
+function SignIn() {
+  const signIn = useSignIn();
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        signIn.run({
+          login: String(form.get("login")),
+          password: String(form.get("password")),
+        });
+      }}
+    >
+      <input name="login" autoComplete="username" />
+      <input name="password" type="password" autoComplete="current-password" />
+      {signIn.message && <p role="alert">{signIn.message}</p>}
+      <button disabled={signIn.pending}>Sign in</button>
     </form>
   );
 }
 ```
 
-Password reset emails open `/reset-password`: call
-`exwave.confirmPasswordReset({ userId, code, password })` the same way, with
-`code` from `exwave_reset`.
+Messages come from `@exwave-nexus/auth/messages` in English. Pass
+`messages={{ "error.invalid_credentials": "…" }}` to the provider to change any
+of them.
 
-## Your own server or game server
-
-A game gets a short-lived player access token (PAT) from the signed-in
-session: `auth.getPlayerAccessToken()` in the browser, or
-`GET /api/exwave/token` with Next.js. Check it before trusting it:
+## Without React
 
 ```ts
-import { verifyPlayerAccessToken } from "@exwave-nexus/auth/server";
+import { createExwaveAuth } from "@exwave-nexus/auth";
 
-const { userId, claims } = await verifyPlayerAccessToken(token, {
+const auth = createExwaveAuth({ publishableKey: "exw_pk_..." });
+
+auth.onAuthStateChange((event, session) => render(session?.user ?? null));
+await auth.signIn({ login: "ada@example.com", password: "..." });
+```
+
+`createExwaveRouteClient()` makes the same calls to your server's
+`/api/exwave` routes instead, when the session lives in a cookie. React and
+Next.js are optional peers: the core never imports them.
+
+## On your server
+
+`createExwaveNext()` (`@exwave-nexus/auth/next`) does it all for Next.js.
+Anywhere else, `@exwave-nexus/auth/server` has the same pieces: mount
+`handleAuthRequest(auth, request, action)` at `/api/exwave/*` and point a route
+client at it.
+
+## Games: player access tokens
+
+A player access token (PAT) is a short-lived token a game sends to its game
+servers. Get one from the signed-in session, and check it on the game server:
+
+```ts
+const token = await auth.getPlayerAccessToken(); // browser client
+// Next.js: GET /api/exwave/token from the page
+
+import { verifyPlayerAccessToken } from "@exwave-nexus/auth/server";
+const { userId } = await verifyPlayerAccessToken(token, {
   publishableKey: "exw_pk_...",
 });
 ```
 
-It throws an `ExwaveAuthError` with the code `invalid_token` when the token is
-expired, forged, or for another platform.
+Engines and launchers can sign in with OpenID Connect instead: see
+<https://www.exwave.net/docs/auth/games/>.
 
 ## Errors
 
-Every call throws an `ExwaveAuthError` with a `code` you can show to users:
-
-```ts
-import { isExwaveAuthError } from "@exwave-nexus/auth";
-
-try {
-  await auth.signIn({ login, password });
-} catch (error) {
-  if (isExwaveAuthError(error) && error.code === "invalid_credentials") {
-    showError("Wrong email or password");
-  }
-}
-```
+Calls throw an `ExwaveAuthError` with a `code`; hooks put it in `error`.
+`describeError(error)` from `@exwave-nexus/auth/messages` says it in words.
 
 | Code | Meaning |
 | --- | --- |
 | `invalid_credentials` | Wrong login or password |
 | `email_not_verified` | The user hasn't opened the verification link yet |
-| `player_locked` | The account was locked in Nexus → Auth → Users (the session ends with `account_locked`) |
+| `player_locked` | The account was locked in Nexus (the session ends with `account_locked`) |
 | `email_taken` | Sign-up with an email that's already in use |
 | `weak_password` | The password breaks the platform's rules, listed in `error.failedRules` |
 | `invalid_code` | The email link was already used or has expired |
+| `invalid_redirect_to` | The page's origin isn't the Site URL or a Redirect URL in Nexus |
 | `rate_limited` | Too many attempts: retry after `error.retryAfter` seconds |
 
-## Examples
+## Develop without a platform
 
-`examples/` has a React + Vite app and a Next.js app. They run against a local
-mock of the Auth API:
+`@exwave-nexus/auth-mock` is an in-memory Exwave Auth for local work and
+tests:
+
+```bash
+npx exwave-auth-mock   # http://localhost:4010, prints its publishable key
+```
+
+Sign in as `player1` with `Password123!`, or sign up and open the link it
+prints.
+
+## Upgrading from 0.1
+
+| 0.1 | 0.2 |
+| --- | --- |
+| `Player` | `User` |
+| `session.player`, `useExwave().player` | `session.user`, `useExwave().user` |
+| `auth.getPlayer()`, `exwave.getPlayer()` | `auth.getUser()`, `exwave.getUser()` |
+| Route handler JSON `{ player }` | `{ user }` |
+| Sign-out reason `player_locked` | `account_locked` (the error code stays `player_locked`) |
+| `useExwave().auth` is `ExwaveAuth` | `ExwaveAuth \| ExwaveRouteClient`: check `auth.mode` |
+
+The player access token API keeps its names.
+
+## This repository
+
+| Path | What |
+| --- | --- |
+| `packages/auth` | `@exwave-nexus/auth` |
+| `packages/auth-mock` | `@exwave-nexus/auth-mock` |
+| `packages/create` | `create-exwave`, and its `templates/` (also the dev playgrounds) |
+| `registry/` | The shadcn registry: the components, and the built JSON the website serves |
 
 ```bash
 bun install
-bun run mock      # mock Auth API on http://localhost:4010
-bun run dev:spa   # http://localhost:5173
-bun run dev:next  # http://localhost:3000
+bun run mock       # the mock, on http://localhost:4010
+bun run dev:next   # the Next.js template, http://localhost:3000
+bun run dev:vite   # the Vite template, http://localhost:5173
 ```
-
-Sign in as `player1` with `Password123!`, or sign up and open the link the
-mock prints.

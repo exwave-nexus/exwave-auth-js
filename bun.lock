@@ -14,7 +14,7 @@
     },
     "packages/auth": {
       "name": "@exwave-nexus/auth",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "dependencies": {
         "jose": "6.2.17",
       },
@@ -41,7 +41,7 @@
     },
     "packages/auth-mock": {
       "name": "@exwave-nexus/auth-mock",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "bin": {
         "exwave-auth-mock": "./src/cli.ts",
       },
@@ -56,7 +56,7 @@
     },
     "packages/create": {
       "name": "create-exwave",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "bin": {
         "create-exwave": "./src/index.ts",
       },

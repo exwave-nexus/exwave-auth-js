@@ -1,6 +1,6 @@
 {
   "name": "@exwave-nexus/auth",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Exwave managed auth for websites and apps: browser, Bun, Node, Next.js and React.",
