@@ -1,3 +1,5 @@
+import type { SignOutReason } from "./client";
+
 /** The signed-in user, as the Auth API describes them, in camelCase. */
 export interface User {
   /** Exwave's ID for the user: the player access token's subject, `managed:<platform id>:<user id>`. */
@@ -88,4 +90,15 @@ export interface PlayerAccessTokenClaims {
   exp: number;
   jti?: string;
   [claim: string]: unknown;
+}
+
+/**
+ * The server's view of the session, safe to pass from a Server Component to
+ * the browser: no tokens. `signOutReason` says why the last session ended.
+ */
+export interface AuthState {
+  user: User | null;
+  /** When the session's PAT expires, in milliseconds since the epoch. */
+  expiresAt: number | null;
+  signOutReason: SignOutReason | null;
 }

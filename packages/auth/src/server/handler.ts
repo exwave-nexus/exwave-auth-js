@@ -6,6 +6,8 @@ import type { ExwaveServerAuth, RefreshResult } from "./index";
 export interface HandlerOptions {
   /** Default `redirectTo` for email links when the browser sends none. */
   links?: { verifyEmail?: string; resetPassword?: string };
+  /** The app's public origin for those links. Default: the request's. */
+  appUrl?: string;
 }
 
 type Body = Record<string, unknown>;
@@ -22,7 +24,8 @@ function text(body: Body, field: string, optional = false) {
 
 function json(body: unknown, status = 200, headers: HeadersInit = {}) {
   const response = Response.json(body, { status, headers });
-  response.headers.set("cache-control", "no-store");
+  if (!response.headers.has("cache-control"))
+    response.headers.set("cache-control", "no-store");
   return response;
 }
 
@@ -88,7 +91,7 @@ export async function handleAuthRequest(
       request.method === "POST"
         ? (((await request.json().catch(() => ({}))) as Body) ?? {})
         : {};
-    const origin = new URL(request.url).origin;
+    const origin = new URL(options.appUrl ?? request.url).origin;
     const link = (path: string | undefined) =>
       text(body, "redirectTo", true) ??
       (path ? new URL(path, origin).href : undefined);
@@ -207,7 +210,10 @@ export async function handleAuthRequest(
           : json({ user, expiresAt }, 200, headers);
       }
       case "GET config":
-        return json(await auth.getConfig());
+        // Nothing personal, and Auth caches it for a minute too.
+        return json(await auth.getConfig(), 200, {
+          "cache-control": "private, max-age=60",
+        });
       default:
         return json({ error: "not_found" }, 404);
     }

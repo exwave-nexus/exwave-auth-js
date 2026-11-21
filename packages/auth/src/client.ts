@@ -1,4 +1,5 @@
 import { type ApiTokens, createPlayerApi, toUser } from "./api";
+import { parseEmailLink } from "./email-link";
 import { ExwaveAuthError, isExwaveAuthError } from "./errors";
 import { resolveStorage, type StorageOption } from "./storage";
 import type {
@@ -56,13 +57,20 @@ export const SIGN_OUT_REASON_TTL_MS = 5 * 60_000;
 /**
  * `info.reason` says why the user is signed out: on `SIGNED_OUT`, and on
  * `INITIAL_SESSION` when the stored session ended while loading or in the
- * last 5 minutes (in any tab).
+ * last 5 minutes (in any tab). `info.source` is `"server"` when the change
+ * came from the server's view of the session (`hydrate()`), not from this
+ * page or another tab.
  */
 export type AuthChangeListener = (
   event: AuthChangeEvent,
   session: Session | null,
-  info: { reason?: SignOutReason },
+  info: AuthChangeInfo,
 ) => void;
+
+export interface AuthChangeInfo {
+  reason?: SignOutReason;
+  source?: "server";
+}
 
 interface LockManagerLike {
   request<T>(name: string, callback: () => Promise<T>): Promise<T>;
@@ -101,9 +109,13 @@ export interface ExwaveAuthOptions {
   runtime?: Partial<ExwaveRuntime>;
 }
 
-export interface ExwaveAuth {
-  readonly platformId: string;
-  readonly authOrigin: string;
+/**
+ * What the browser client and the route client share, so hooks and
+ * components work with either: `"browser"` talks to Exwave Auth from the
+ * page, `"route"` to your server's `/api/exwave/*` routes.
+ */
+export interface ExwaveAuthClient {
+  readonly mode: "browser" | "route";
   signUp(input: SignUpInput): Promise<SignUpResult>;
   verifyEmail(input: CodeInput): Promise<Session>;
   /** Reads `?exwave_verify=…&uid=…` or `?exwave_reset=…&uid=…` from the URL (default: the current page). */
@@ -120,13 +132,20 @@ export interface ExwaveAuth {
    */
   getPlayerAccessToken(): Promise<string | null>;
   getSession(): Promise<Session | null>;
-  /** Fetches the user from `players/me` with the current PAT. */
-  getUser(): Promise<User>;
   /** Calls the listener with `INITIAL_SESSION` once loaded, then on every change. */
   onAuthStateChange(listener: AuthChangeListener): () => void;
   getConfig(): Promise<PlatformConfig>;
   /** Stops timers and cross-tab listeners. */
   close(): void;
+}
+
+/** The browser client: talks to Exwave Auth from the page. */
+export interface ExwaveAuth extends ExwaveAuthClient {
+  readonly mode: "browser";
+  readonly platformId: string;
+  readonly authOrigin: string;
+  /** Fetches the user from `players/me` with the current PAT. */
+  getUser(): Promise<User>;
 }
 
 interface Stored {
@@ -222,7 +241,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     !!s.expiresAt &&
     s.expiresAt - rt.now() > REFRESH_MARGIN_MS;
 
-  function emit(event: AuthChangeEvent, info: { reason?: SignOutReason } = {}) {
+  function emit(event: AuthChangeEvent, info: AuthChangeInfo = {}) {
     for (const listener of [...listeners]) {
       try {
         listener(event, session, info);
@@ -417,6 +436,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
   })();
 
   const auth: ExwaveAuth = {
+    mode: "browser",
     platformId: api.platformId,
     authOrigin: api.authOrigin,
     signUp: (input) => api.signUp(input),
@@ -425,20 +445,17 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     },
     async handleEmailLink(url) {
       const href = url ?? globalThis.location?.href;
-      if (!href) return null;
-      const params = new URL(href).searchParams;
-      const userId = params.get("uid");
-      const reset = params.get("exwave_reset");
-      const verify = params.get("exwave_verify");
-      if (!userId) return null;
-      if (reset) return { type: "password_reset", userId, code: reset };
-      if (!verify) return null;
+      const link = href ? parseEmailLink(href) : null;
+      if (!link) return null;
+      const { userId, code } = link;
+      if (link.type === "reset")
+        return { type: "password_reset", userId, code };
       // Codes work once: share one call between repeated handlers (React Strict Mode).
-      let flight = linkFlights.get(verify);
+      let flight = linkFlights.get(code);
       if (!flight) {
-        flight = auth.verifyEmail({ userId, code: verify });
-        linkFlights.set(verify, flight);
-        flight.catch(() => linkFlights.delete(verify));
+        flight = auth.verifyEmail({ userId, code });
+        linkFlights.set(code, flight);
+        flight.catch(() => linkFlights.delete(code));
       }
       return { type: "email_verified", session: await flight };
     },

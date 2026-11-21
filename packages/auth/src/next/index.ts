@@ -14,6 +14,7 @@ import {
   SIGN_OUT_REASON_MAX_AGE_SECONDS,
 } from "../server";
 import type {
+  AuthState,
   CodeInput,
   EmailInput,
   PasswordResetConfirmInput,
@@ -143,9 +144,27 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
         const { action = [] } = await context.params;
         return handleAuthRequest(server(), request, action.join("/"), {
           links: paths,
+          appUrl: options.appUrl,
         });
       };
       return { GET: handler, POST: handler };
+    },
+
+    /**
+     * The session as the browser may see it, for `<ExwaveProvider
+     * initialState>` from `@exwave-nexus/auth/next/client`: the user, the
+     * PAT's expiry and why the last session ended. No tokens, and no refresh,
+     * so it is safe in Server Components.
+     */
+    async getAuthState(): Promise<AuthState> {
+      const jar = await cookies();
+      const session = await readSession(jar);
+      const reason = jar.get(server().reasonCookieName)?.value;
+      return {
+        user: session?.user ?? null,
+        expiresAt: session?.expiresAt ?? null,
+        signOutReason: !session && isSignOutReason(reason) ? reason : null,
+      };
     },
 
     /** The signed-in user from the cookie, or `null`. Safe in Server Components. */
