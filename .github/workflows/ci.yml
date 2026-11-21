@@ -50,3 +50,22 @@ jobs:
         run: bun run size
       - name: Stage the packages
         run: bun scripts/stage.ts packages/auth && bun scripts/stage.ts packages/auth-mock
+
+  smoke:
+    # Slow and networked: on main only. Installs the staged tarballs into new
+    # apps and a fresh shadcn app, builds them, and signs in against the mock.
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.4.3
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - name: Smoke test
+        run: bun run smoke
