@@ -75,12 +75,12 @@ Concise, imperative commit subjects. PRs say why, and how it was verified.
 
 ## Releases
 
-The packages share one version. Bump `version` in every
-`packages/*/package.json`, merge to `main`, then push a matching tag
+The packages share one version and are public on npm. Bump `version` in
+every `packages/*/package.json`, merge to `main`, then push a matching tag
 (`git tag v0.2.0 && git push origin v0.2.0`). The Release workflow checks the
 tag, runs the checks and the smoke test, stages, and publishes
-`@exwave-nexus/auth` and `@exwave-nexus/auth-mock` to GitHub Packages with the
-workflow's token, skipping any version already published. Published versions
-can't be overwritten. `create-exwave` is unscoped, so it can only be published
-to npmjs. After a release, the website copies `registry/public/r` (see its
+`@exwave-nexus/auth`, `@exwave-nexus/auth-mock` and `create-exwave` with the
+`NPM_TOKEN` repository secret (a granular npm token that can publish them),
+skipping any version already published. Published versions can't be
+overwritten. After a release, the website copies `registry/public/r` (see its
 `scripts/sync-registry.ts`).

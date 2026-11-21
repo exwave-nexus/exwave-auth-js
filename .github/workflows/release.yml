@@ -1,15 +1,15 @@
 name: Release
 
 # Push a tag named after the packages' shared version (v0.2.0) to publish
-# @exwave-nexus/auth and @exwave-nexus/auth-mock to GitHub Packages, with the
-# workflow's own token.
+# @exwave-nexus/auth, @exwave-nexus/auth-mock and create-exwave to npm as
+# public packages, with the NPM_TOKEN secret (a granular npm token that can
+# publish them).
 on:
   push:
     tags: ["v*"]
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: release
@@ -26,8 +26,15 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
-          registry-url: https://npm.pkg.github.com
-          scope: "@exwave-nexus"
+          registry-url: https://registry.npmjs.org
+      - name: Check the npm token is set
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::Add an NPM_TOKEN repository secret that can publish the packages"
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - run: bun install --frozen-lockfile
       - name: Check the tag matches the versions
         run: bun scripts/check-versions.ts "$GITHUB_REF_NAME"
@@ -42,16 +49,19 @@ jobs:
         run: bun run smoke
       - name: Publish
         # Published versions can't be overwritten: skip one that is already
-        # there, so a rerun after a partial failure finishes the rest.
+        # there, so a rerun after a partial failure finishes the rest. The
+        # scope's registry is set explicitly so a scope mapping in some npm
+        # config can't send @exwave-nexus/* elsewhere.
         run: |
-          for dir in packages/auth packages/auth-mock; do
+          npmjs="--registry=https://registry.npmjs.org/ --@exwave-nexus:registry=https://registry.npmjs.org/"
+          for dir in packages/auth packages/auth-mock packages/create; do
             name=$(jq -r .name "$dir/publish/package.json")
             version=$(jq -r .version "$dir/publish/package.json")
-            if npm view "$name@$version" version >/dev/null 2>&1; then
+            if npm view "$name@$version" version $npmjs >/dev/null 2>&1; then
               echo "$name@$version is already published"
             else
-              npm publish "./$dir/publish"
+              npm publish "./$dir/publish" --access public $npmjs
             fi
           done
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
