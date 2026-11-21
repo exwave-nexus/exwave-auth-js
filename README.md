@@ -224,6 +224,7 @@ The player access token API keeps its names.
 | `packages/auth-mock` | `@exwave-nexus/auth-mock` |
 | `packages/create` | `create-exwave`, and its `templates/` (also the dev playgrounds) |
 | `registry/` | The shadcn registry: the components, and the built JSON the website serves |
+| `tests/` | The packages tested together against the mock, through their public entry points |
 
 ```bash
 bun install

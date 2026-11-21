@@ -5,7 +5,8 @@
   "packageManager": "bun@1.4.3",
   "workspaces": [
     "packages/*",
-    "packages/create/templates/*"
+    "packages/create/templates/*",
+    "tests"
   ],
   "scripts": {
     "mock": "bun packages/auth-mock/src/cli.ts",

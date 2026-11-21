@@ -9,15 +9,18 @@ import {
   mock,
   test,
 } from "bun:test";
+import type { AuthState } from "@exwave-nexus/auth";
+import type {
+  ExwaveClient,
+  ExwaveProviderProps,
+} from "@exwave-nexus/auth/react";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import type { ReactNode } from "react";
-import { type ClientMode, harness } from "../test-harness";
-import type { AuthState } from "../types";
-import type { ExwaveClient, ExwaveProviderProps } from "./provider";
+import { type ClientMode, harness } from "./harness";
 
 type Rtl = typeof import("@testing-library/react");
 let rtl: Rtl;
-let react: typeof import("./index");
+let react: typeof import("@exwave-nexus/auth/react");
 
 beforeAll(async () => {
   // Keep the runtime's fetch: happy-dom's drops the Cookie and Sec-Fetch-Site
@@ -28,7 +31,7 @@ beforeAll(async () => {
   process.env.RTL_SKIP_AUTO_CLEANUP = "true";
   // After the DOM exists: react-dom checks for it when it loads.
   rtl = await import("@testing-library/react");
-  react = await import("./index");
+  react = await import("@exwave-nexus/auth/react");
 });
 afterEach(() => rtl.cleanup());
 afterAll(async () => {

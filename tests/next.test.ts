@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { createExwaveNext } from "@exwave-nexus/auth/next";
+import { createMockAuth } from "@exwave-nexus/auth-mock";
 import { NextRequest } from "next/server";
-import { createMockAuth } from "../../../auth-mock/src/index";
-import { createExwaveNext } from "./index";
 
 const APP = "http://localhost:3000";
 const SECRET = "mock-test-cookie-secret-32-chars!!";

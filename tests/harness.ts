@@ -1,16 +1,17 @@
 // Both clients against the mock: the browser client talks to it directly, the
 // route client through handleAuthRequest, as a Next.js app's /api/exwave/*
 // routes would, with a cookie jar standing in for the browser's.
-// By path, not as a dependency: auth-mock depends on this package, and a
-// cycle would stop `bun run --filter` from building this one first.
+
 import {
-  createMockAuth,
-  type MockAuthOptions,
-} from "../../auth-mock/src/index";
-import { createExwaveAuth } from "./client";
-import { createExwaveRouteClient } from "./route-client";
-import { createExwaveServerAuth, handleAuthRequest } from "./server";
-import { memoryStorage } from "./storage";
+  createExwaveAuth,
+  createExwaveRouteClient,
+  memoryStorage,
+} from "@exwave-nexus/auth";
+import {
+  createExwaveServerAuth,
+  handleAuthRequest,
+} from "@exwave-nexus/auth/server";
+import { createMockAuth, type MockAuthOptions } from "@exwave-nexus/auth-mock";
 
 export const APP = "http://localhost:3000";
 const SECRET = "harness-cookie-secret-at-least-32-chars";
