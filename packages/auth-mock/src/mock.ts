@@ -1,16 +1,15 @@
-// An in-memory stand-in for the Exwave player API (exwave-auth v0.7.0,
-// `/orbit/v1/platforms/:platformId/…`), so the examples run before production
-// has it. Email links are printed to the console instead of being sent.
-//
-//   bun run mock            # http://localhost:4010
-//   MOCK_PAT_TTL=120 bun run mock   # shorter PATs, to watch refreshes
+// An in-memory stand-in for the Exwave Auth API (exwave-auth v0.7.0,
+// `/orbit/v1/platforms/:platformId/…`), for local development and tests.
+// Email links are printed to the console instead of being sent. Not for
+// production: it keeps everything in memory and accepts any origin.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { encodePublishableKey } from "@exwave-nexus/auth";
 import { exportJWK, generateKeyPair, jwtVerify, SignJWT } from "jose";
-import { encodePublishableKey } from "../packages/auth/src/publishable-key";
 
 export const MOCK_PLATFORM_ID = "6f1c2a10-5a3e-4c2b-9d4e-0a1b2c3d4e5f";
 export const MOCK_PORT = 4010;
-export const SEED_PLAYERS = [
+/** Accounts every mock starts with (unless `seed: false`). */
+export const SEED_USERS = [
   {
     email: "player@example.com",
     username: "player1",
@@ -179,8 +178,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
     return user;
   }
 
-  if (options.seed ?? true)
-    for (const seed of SEED_PLAYERS) addUser({ ...seed });
+  if (options.seed ?? true) for (const seed of SEED_USERS) addUser({ ...seed });
 
   const findByEmail = (email: string) =>
     [...users.values()].find(
@@ -612,33 +610,3 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
 }
 
 export type MockAuth = Awaited<ReturnType<typeof createMockAuth>>;
-
-if (import.meta.main) {
-  const port = Number(process.env.MOCK_AUTH_PORT ?? MOCK_PORT);
-  const mock = await createMockAuth({
-    origin: `http://localhost:${port}`,
-    patTtlSeconds: Number(process.env.MOCK_PAT_TTL ?? 900),
-  });
-  // Both loopbacks: "localhost" resolves to either, depending on the client.
-  for (const hostname of ["127.0.0.1", "::1"])
-    Bun.serve({ port, hostname, fetch: (request) => mock.fetch(request) });
-  console.log(`
-  Exwave mock auth  ${mock.origin}   (PATs last ${mock.settings.patTtlSeconds} s)
-
-  Publishable key   ${mock.publishableKey}
-    examples/vite-spa      VITE_EXWAVE_PUBLISHABLE_KEY=…
-    examples/next-server   NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY=…
-    (both are already in each example's .env.development)
-
-  Password policy   ${JSON.stringify(mock.settings.passwordPolicy)}
-    (Zitadel's default; createMockAuth({ passwordPolicy }) changes it)
-
-  Test players (password ${SEED_PLAYERS[0]?.password})
-    ${SEED_PLAYERS.map((p) => `${p.email} / ${p.username}${p.emailVerified ? "" : "  (email not verified)"}`).join("\n    ")}
-
-  Mock controls
-    curl ${mock.origin}/__mock/players
-    curl -X POST ${mock.origin}/__mock/players/player1/lock     (and /unlock)
-    curl ${mock.origin}/__mock/emails
-`);
-}

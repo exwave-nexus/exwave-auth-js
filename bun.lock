@@ -48,6 +48,7 @@
         "jose": "6.2.17",
       },
       "devDependencies": {
+        "@exwave-nexus/auth-mock": "workspace:*",
         "@types/bun": "1.4.4",
         "@types/react": "19.3.0",
         "next": "16.4.6",
@@ -63,6 +64,21 @@
         "next",
         "react",
       ],
+    },
+    "packages/auth-mock": {
+      "name": "@exwave-nexus/auth-mock",
+      "version": "0.1.1",
+      "bin": {
+        "exwave-auth-mock": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@exwave-nexus/auth": "workspace:*",
+        "jose": "6.2.17",
+      },
+      "devDependencies": {
+        "@types/bun": "1.4.4",
+        "typescript": "6.0.3",
+      },
     },
   },
   "packages": {
@@ -95,6 +111,8 @@
     "@exwave-examples/vite-spa": ["@exwave-examples/vite-spa@workspace:examples/vite-spa"],
 
     "@exwave-nexus/auth": ["@exwave-nexus/auth@workspace:packages/auth"],
+
+    "@exwave-nexus/auth-mock": ["@exwave-nexus/auth-mock@workspace:packages/auth-mock"],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

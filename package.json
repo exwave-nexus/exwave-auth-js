@@ -8,7 +8,7 @@
     "examples/*"
   ],
   "scripts": {
-    "mock": "bun scripts/mock-auth.ts",
+    "mock": "bun packages/auth-mock/src/cli.ts",
     "dev:spa": "bun run --cwd examples/vite-spa dev",
     "dev:next": "bun run --cwd examples/next-server dev",
     "lint": "biome check .",
@@ -16,7 +16,9 @@
     "typecheck": "tsc -p tsconfig.json && bun run --filter '*' typecheck",
     "test": "bun test",
     "build": "bun run --filter '*' build",
-    "size": "bun scripts/bundle-size.ts"
+    "size": "bun scripts/bundle-size.ts",
+    "stage": "bun run build && bun scripts/stage.ts packages/auth && bun scripts/stage.ts packages/auth-mock",
+    "check-versions": "bun scripts/check-versions.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

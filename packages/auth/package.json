@@ -20,7 +20,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "build": "bun build.ts",
-    "stage": "bun build.ts && bun stage.ts"
+    "stage": "bun build.ts && bun ../../scripts/stage.ts ."
   },
   "dependencies": {
     "jose": "6.2.17"
@@ -38,6 +38,7 @@
     }
   },
   "devDependencies": {
+    "@exwave-nexus/auth-mock": "workspace:*",
     "@types/bun": "1.4.4",
     "@types/react": "19.3.0",
     "next": "16.4.6",
