@@ -1,8 +1,8 @@
 // The library against the mock's in-memory player API: the contract end to
 // end, for the browser client and the server route handler.
 import { describe, expect, test } from "bun:test";
-import { createMockAuth, type MockAuth } from "@exwave-nexus/auth-mock";
 import { createLocalJWKSet } from "jose";
+import { createMockAuth, type MockAuth } from "../../auth-mock/src/index";
 import { createExwaveAuth, memoryStorage } from "./index";
 import {
   createExwaveServerAuth,

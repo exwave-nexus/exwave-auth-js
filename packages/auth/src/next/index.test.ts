@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { createMockAuth } from "@exwave-nexus/auth-mock";
 import { NextRequest } from "next/server";
+import { createMockAuth } from "../../../auth-mock/src/index";
 import { createExwaveNext } from "./index";
 
 const APP = "http://localhost:3000";

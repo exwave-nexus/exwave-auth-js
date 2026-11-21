@@ -1,7 +1,12 @@
 // Both clients against the mock: the browser client talks to it directly, the
 // route client through handleAuthRequest, as a Next.js app's /api/exwave/*
 // routes would, with a cookie jar standing in for the browser's.
-import { createMockAuth, type MockAuthOptions } from "@exwave-nexus/auth-mock";
+// By path, not as a dependency: auth-mock depends on this package, and a
+// cycle would stop `bun run --filter` from building this one first.
+import {
+  createMockAuth,
+  type MockAuthOptions,
+} from "../../auth-mock/src/index";
 import { createExwaveAuth } from "./client";
 import { createExwaveRouteClient } from "./route-client";
 import { createExwaveServerAuth, handleAuthRequest } from "./server";
