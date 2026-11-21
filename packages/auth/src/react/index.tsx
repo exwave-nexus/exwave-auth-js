@@ -15,7 +15,7 @@ import {
   type ExwaveAuthOptions,
   type SignOutReason,
 } from "../client";
-import type { Player, Session } from "../types";
+import type { Session, User } from "../types";
 
 export interface ExwaveContextValue {
   auth: ExwaveAuth;
@@ -23,11 +23,11 @@ export interface ExwaveContextValue {
   isLoaded: boolean;
   isSignedIn: boolean;
   session: Session | null;
-  player: Player | null;
+  user: User | null;
   /** The last auth event, such as `TOKEN_REFRESHED`. */
   event: AuthChangeEvent | null;
   /**
-   * Why the player is signed out, such as `player_locked`: set by `SIGNED_OUT`,
+   * Why the user is signed out, such as `account_locked`: set by `SIGNED_OUT`,
    * or on load when the session ended in the last 5 minutes. `null` while
    * signed in.
    */
@@ -71,7 +71,7 @@ export function ExwaveProvider({ children, ...props }: ExwaveProviderProps) {
       auth,
       ...state,
       isSignedIn: state.session !== null,
-      player: state.session?.player ?? null,
+      user: state.session?.user ?? null,
     }),
     [auth, state],
   );

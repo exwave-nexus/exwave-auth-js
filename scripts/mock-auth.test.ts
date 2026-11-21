@@ -64,7 +64,7 @@ describe("browser client against the mock", () => {
     const link = await auth.handleEmailLink(email?.link);
     if (link?.type !== "email_verified")
       throw new Error("expected a verified link");
-    expect(link.session.player.emailVerified).toBe(true);
+    expect(link.session.user.emailVerified).toBe(true);
 
     const token = await auth.getPlayerAccessToken();
     const verified = await verifyPlayerAccessToken(token ?? "", {
@@ -72,7 +72,7 @@ describe("browser client against the mock", () => {
       jwks,
     });
     expect(verified.userId).toBe(signUp.userId);
-    expect((await auth.getPlayer()).email).toBe("new@example.com");
+    expect((await auth.getUser()).email).toBe("new@example.com");
 
     await auth.signOut();
     expect(await auth.getSession()).toBeNull();
@@ -156,7 +156,7 @@ describe("browser client against the mock", () => {
       ...link,
       password: "LongEnough123!",
     });
-    expect(session.player.username).toBe("player1");
+    expect(session.user.username).toBe("player1");
   });
 
   test("locking the player fails the next refresh with player_locked", async () => {
@@ -271,7 +271,7 @@ describe("server route handler against the mock", () => {
     expect(cookie).not.toContain("Secure"); // plain-HTTP localhost
     const text = await response.text();
     expect(text).not.toContain("exw_rt_");
-    expect(JSON.parse(text).player.username).toBe("player1");
+    expect(JSON.parse(text).user.username).toBe("player1");
   });
 
   test("POSTs from another site are refused", async () => {
@@ -318,7 +318,7 @@ describe("server route handler against the mock", () => {
     expect(written).toHaveLength(1);
   });
 
-  test("a locked player's session cookie is cleared at the next refresh, leaving the reason", async () => {
+  test("a locked account's session cookie is cleared at the next refresh, leaving the reason", async () => {
     const { request, signIn, clock, mock } = await server();
     const cookie = await signIn();
     await mock.lock("player1");
@@ -330,7 +330,7 @@ describe("server route handler against the mock", () => {
     expect(cleared).toStartWith("exwave_session=;");
     expect(cleared).toContain("Max-Age=0");
     expect(reason).toBe(
-      "exwave_session_signed_out=player_locked; Path=/; Max-Age=300; HttpOnly; SameSite=Lax",
+      "exwave_session_signed_out=account_locked; Path=/; Max-Age=300; HttpOnly; SameSite=Lax",
     );
 
     // Browser code reads it from GET session (the cookie is httpOnly).
@@ -338,13 +338,13 @@ describe("server route handler against the mock", () => {
       cookie: (reason ?? "").split(";")[0],
     });
     expect(await session.json()).toEqual({
-      player: null,
+      user: null,
       expiresAt: null,
-      signOutReason: "player_locked",
+      signOutReason: "account_locked",
     });
   });
 
-  test("sign out everywhere ends the player's other sessions, and each says why", async () => {
+  test("sign out everywhere ends the user's other sessions, and each says why", async () => {
     const { request, signIn, clock } = await server();
     const here = await signIn();
     const elsewhere = await signIn();
@@ -362,7 +362,7 @@ describe("server route handler against the mock", () => {
     clock.now += 850_000;
     const session = await request("GET", "session", { cookie: elsewhere });
     expect(await session.json()).toEqual({
-      player: null,
+      user: null,
       expiresAt: null,
       signOutReason: "invalid_refresh_token",
     });
@@ -466,22 +466,22 @@ describe("choices exwave-auth PR #12 made (shared notes, player-rest-api-contrac
     expect(config.oidc.scopes).toContain("openid");
   });
 
-  test("player.id is the PAT subject, and players/me answers the bare player", async () => {
+  test("user.id is the PAT subject, and players/me answers the bare player", async () => {
     const { mock, fetch } = await setup();
     const auth = client(mock, fetch);
     const session = await auth.signIn(PLAYER);
-    expect(session.player.id).toBe(
-      `managed:${mock.platformId}:${session.player.userId}`,
+    expect(session.user.id).toBe(
+      `managed:${mock.platformId}:${session.user.userId}`,
     );
     const me = await fetch(
       `${mock.origin}/orbit/v1/platforms/${mock.platformId}/players/me`,
       { headers: { authorization: `Bearer ${session.accessToken}` } },
     );
     expect(await me.json()).toMatchObject({
-      id: session.player.id,
+      id: session.user.id,
       username: "player1",
     });
-    expect(await auth.getPlayer()).toEqual(session.player);
+    expect(await auth.getUser()).toEqual(session.user);
   });
 
   test("a redirect_to off the allowed origins is invalid_redirect_to", async () => {
@@ -511,7 +511,7 @@ describe("choices exwave-auth PR #12 made (shared notes, player-rest-api-contrac
     for (let i = 0; i < 9; i++) await auth.signIn(wrong).catch(() => {});
     await auth.signIn(PLAYER);
     for (let i = 0; i < 9; i++) await auth.signIn(wrong).catch(() => {});
-    expect((await auth.signIn(PLAYER)).player.username).toBe("player1");
+    expect((await auth.signIn(PLAYER)).user.username).toBe("player1");
   });
 
   test("ten wrong codes rate limit the user", async () => {

@@ -18,15 +18,15 @@ const pages: Record<string, () => ReactNode> = {
 
 export function App() {
   const path = usePath();
-  const { isLoaded, player } = useExwave();
+  const { isLoaded, user } = useExwave();
   const Page = pages[path] ?? NotFound;
   return (
     <>
       <header>
         <strong>Exwave auth · Vite SPA</strong>
         <Link to="/">Home</Link>
-        {player ? (
-          <Link to="/account">{player.displayName}</Link>
+        {user ? (
+          <Link to="/account">{user.displayName}</Link>
         ) : (
           <>
             <Link to="/sign-in">Sign in</Link>
@@ -40,17 +40,17 @@ export function App() {
 }
 
 function HomePage() {
-  const { player } = useExwave();
+  const { user } = useExwave();
   return (
     <section className="card">
-      <h1>Managed player auth, browser only</h1>
+      <h1>Exwave Auth, browser only</h1>
       <p>
-        This app calls the Exwave player API from the browser. The access token
+        This app calls the Exwave Auth API from the browser. The access token
         stays in memory; the refresh token sits in <code>localStorage</code>.
       </p>
-      {player ? (
+      {user ? (
         <p>
-          Signed in as <strong>{player.displayName}</strong>.{" "}
+          Signed in as <strong>{user.displayName}</strong>.{" "}
           <Link to="/account">Open your account</Link>.
         </p>
       ) : (

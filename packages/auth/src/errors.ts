@@ -1,6 +1,6 @@
 import type { PasswordRule } from "./password";
 
-/** Error codes the Exwave player API answers with, plus the client's own. */
+/** Error codes the Exwave Auth API answers with, plus the client's own. */
 export type ExwaveAuthErrorCode =
   | "managed_auth_not_enabled"
   | "sign_up_disabled"

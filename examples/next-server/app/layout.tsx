@@ -11,15 +11,15 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  const player = await exwave.getPlayer();
+  const user = await exwave.getUser();
   return (
     <html lang="en">
       <body>
         <header>
           <strong>Exwave auth · Next.js server</strong>
           <Link href="/">Home</Link>
-          {player ? (
-            <Link href="/account">{player.displayName}</Link>
+          {user ? (
+            <Link href="/account">{user.displayName}</Link>
           ) : (
             <>
               <Link href="/sign-in">Sign in</Link>

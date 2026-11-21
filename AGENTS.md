@@ -3,7 +3,7 @@
 ## Layout
 
 Bun workspaces: `packages/auth` (the `@exwave-nexus/auth` library), `examples/*`
-(a Vite SPA and a Next.js app), `scripts/` (the mock player API and the bundle
+(a Vite SPA and a Next.js app), `scripts/` (the mock Auth API and the bundle
 size check). `README.md` is also the package's README on GitHub Packages.
 
 The library's core (`packages/auth/src/*.ts`, the `.` export) has no runtime

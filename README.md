@@ -1,7 +1,8 @@
 # @exwave-nexus/auth
 
-Sign players in to your Exwave platform from a website or a game: in the
-browser, with React, with Next.js, or on your own server.
+Sign users in to your website or app with Exwave Auth: in the browser, with
+React, with Next.js, or on your own server. Games can get a player access
+token from the same session.
 
 ## Install
 
@@ -39,8 +40,9 @@ await auth.signIn({
 const token = await auth.getPlayerAccessToken();
 ```
 
-The token is always valid for at least a minute, and refreshed for you. Send it
-to your game servers and APIs as `Authorization: Bearer <token>`.
+`getPlayerAccessToken()` returns a player access token for a game: always
+valid for at least a minute, and refreshed for you. Send it to your game
+servers as `Authorization: Bearer <token>`.
 
 To follow sign-ins and sign-outs, in every open tab:
 
@@ -71,7 +73,7 @@ await auth.signUp({
 const link = await auth.handleEmailLink();
 
 if (link?.type === "email_verified") {
-  // The player is verified and signed in.
+  // The user is verified and signed in.
 }
 ```
 
@@ -128,14 +130,14 @@ export function App() {
 }
 
 function Account() {
-  const { auth, isLoaded, player } = useExwave();
+  const { auth, isLoaded, user } = useExwave();
 
   if (!isLoaded) return null;
-  if (!player) return <SignInForm />;
+  if (!user) return <SignInForm />;
 
   return (
     <>
-      <p>Hi {player.displayName}</p>
+      <p>Hi {user.displayName}</p>
       <button type="button" onClick={() => auth.signOut()}>
         Sign out
       </button>
@@ -187,7 +189,7 @@ export const config = {
 };
 ```
 
-Sign in from a Server Function, and read the player in a Server Component:
+Sign in from a Server Function, and read the user in a Server Component:
 
 ```ts
 // app/actions.ts
@@ -205,9 +207,9 @@ export async function signIn(login: string, password: string) {
 import { exwave } from "@/lib/exwave";
 
 export default async function Home() {
-  const player = await exwave.getPlayer();
+  const user = await exwave.getUser();
 
-  return <p>{player ? `Hi ${player.displayName}` : "Signed out"}</p>;
+  return <p>{user ? `Hi ${user.displayName}` : "Signed out"}</p>;
 }
 ```
 
@@ -242,12 +244,13 @@ export default async function VerifyPage({ searchParams }: Props) {
 
 Password reset emails open `/reset-password`: call
 `exwave.confirmPasswordReset({ userId, code, password })` the same way, with
-`code` from `exwave_reset`. A game running on the page gets its token from
-`GET /api/exwave/token`.
+`code` from `exwave_reset`.
 
-## Your own server
+## Your own server or game server
 
-Check a player's token before trusting it:
+A game gets a short-lived player access token (PAT) from the signed-in
+session: `auth.getPlayerAccessToken()` in the browser, or
+`GET /api/exwave/token` with Next.js. Check it before trusting it:
 
 ```ts
 import { verifyPlayerAccessToken } from "@exwave-nexus/auth/server";
@@ -262,7 +265,7 @@ expired, forged, or for another platform.
 
 ## Errors
 
-Every call throws an `ExwaveAuthError` with a `code` you can show to players:
+Every call throws an `ExwaveAuthError` with a `code` you can show to users:
 
 ```ts
 import { isExwaveAuthError } from "@exwave-nexus/auth";
@@ -279,8 +282,8 @@ try {
 | Code | Meaning |
 | --- | --- |
 | `invalid_credentials` | Wrong login or password |
-| `email_not_verified` | The player hasn't opened the verification link yet |
-| `player_locked` | The player was locked in Nexus → Players |
+| `email_not_verified` | The user hasn't opened the verification link yet |
+| `player_locked` | The account was locked in Nexus → Auth → Users (the session ends with `account_locked`) |
 | `email_taken` | Sign-up with an email that's already in use |
 | `weak_password` | The password breaks the platform's rules, listed in `error.failedRules` |
 | `invalid_code` | The email link was already used or has expired |
@@ -289,11 +292,11 @@ try {
 ## Examples
 
 `examples/` has a React + Vite app and a Next.js app. They run against a local
-mock of the player API:
+mock of the Auth API:
 
 ```bash
 bun install
-bun run mock      # mock player API on http://localhost:4010
+bun run mock      # mock Auth API on http://localhost:4010
 bun run dev:spa   # http://localhost:5173
 bun run dev:next  # http://localhost:3000
 ```

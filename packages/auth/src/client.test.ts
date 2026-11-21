@@ -119,7 +119,7 @@ describe("refresh scheduling", () => {
     const { clock, api, storage } = setup();
     await storage.setItem(
       KEY,
-      JSON.stringify({ refreshToken: "exw_rt_saved", player: { id: "p" } }),
+      JSON.stringify({ refreshToken: "exw_rt_saved", user: { id: "p" } }),
     );
     const auth = createExwaveAuth({
       publishableKey: PUBLISHABLE_KEY,
@@ -202,7 +202,7 @@ describe("single-flight refresh", () => {
     const b = tab();
     await a.signIn(SIGN_IN);
     await flush();
-    expect((await b.getSession())?.player.email).toBe("player@example.com");
+    expect((await b.getSession())?.user.email).toBe("player@example.com");
 
     clock.current += 850_000;
     const release = api.hold();
@@ -232,11 +232,11 @@ describe("single-flight refresh", () => {
 });
 
 describe("ended sessions", () => {
-  for (const [code, status] of [
-    ["invalid_refresh_token", 401],
-    ["player_locked", 403],
+  for (const [code, status, reason] of [
+    ["invalid_refresh_token", 401, "invalid_refresh_token"],
+    ["player_locked", 403, "account_locked"],
   ] as const)
-    test(`${code} signs the player out with that reason`, async () => {
+    test(`${code} signs the user out with reason ${reason}`, async () => {
       const { clock, api, auth, storage } = setup({ autoRefresh: false });
       const events = record(auth);
       await auth.signIn(SIGN_IN);
@@ -250,20 +250,20 @@ describe("ended sessions", () => {
       expect(failure.status).toBe(status);
       expect(await auth.getSession()).toBeNull();
       // The refresh token is gone; only the reason stays, for other tabs.
-      expect(await stored(storage)).toEqual({ ended: code, at: clock.now() });
+      expect(await stored(storage)).toEqual({ ended: reason, at: clock.now() });
       expect(events.at(-1)).toEqual({
         event: "SIGNED_OUT",
         session: null,
-        reason: code,
+        reason,
       });
     });
 
-  test("a reload that finds the player locked reports why on INITIAL_SESSION", async () => {
+  test("a reload that finds the account locked reports why on INITIAL_SESSION", async () => {
     // Production: lock in Nexus, reload, and the SPA dropped to sign-in silently.
     const { clock, api, storage } = setup();
     await storage.setItem(
       KEY,
-      JSON.stringify({ refreshToken: "exw_rt_saved", player: { id: "p" } }),
+      JSON.stringify({ refreshToken: "exw_rt_saved", user: { id: "p" } }),
     );
     api.handlers.set("players/token/refresh", () =>
       Response.json({ error: "player_locked" }, { status: 403 }),
@@ -277,12 +277,12 @@ describe("ended sessions", () => {
     const events = record(auth);
     await flush();
     expect(events).toEqual([
-      { event: "INITIAL_SESSION", session: null, reason: "player_locked" },
+      { event: "INITIAL_SESSION", session: null, reason: "account_locked" },
     ]);
     // Subscribing later still says why.
     const later = record(auth);
     await flush();
-    expect(later[0]?.reason).toBe("player_locked");
+    expect(later[0]?.reason).toBe("account_locked");
   });
 
   test("a new tab reports a reason from the last 5 minutes, then forgets it", async () => {
@@ -442,7 +442,7 @@ describe("cross-tab events", () => {
       expect(events.at(-1)).toEqual({
         event: "SIGNED_OUT",
         session: null,
-        reason: "player_locked",
+        reason: "account_locked",
       });
     });
 
@@ -458,7 +458,7 @@ describe("cross-tab events", () => {
     await clock.advance(840_000);
     expect(api.count("players/token/refresh")).toBe(1);
     expect(events.filter((e) => e.event === "SIGNED_OUT")).toEqual([
-      { event: "SIGNED_OUT", session: null, reason: "player_locked" },
+      { event: "SIGNED_OUT", session: null, reason: "account_locked" },
     ]);
   });
 
@@ -664,9 +664,9 @@ describe("calls and errors", () => {
   test("getPlayer calls players/me with the PAT", async () => {
     const { api, auth } = setup();
     const session = await auth.signIn(SIGN_IN);
-    const player = await auth.getPlayer();
-    expect(player.userId).toBe("312345678901234567");
+    const user = await auth.getUser();
+    expect(user.userId).toBe("312345678901234567");
     expect(api.calls.at(-1)?.path).toBe("players/me");
-    expect(session.player).toEqual(player);
+    expect(session.user).toEqual(user);
   });
 });

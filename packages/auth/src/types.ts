@@ -1,6 +1,6 @@
-/** A player, as the player API describes them, in camelCase. */
-export interface Player {
-  /** Exwave's player ID: the PAT subject, `managed:<platform id>:<user id>`. */
+/** The signed-in user, as the Auth API describes them, in camelCase. */
+export interface User {
+  /** Exwave's ID for the user: the player access token's subject, `managed:<platform id>:<user id>`. */
   id: string;
   /** The identity provider's (Zitadel) user ID: the `uid` in email links. */
   userId: string;
@@ -11,7 +11,7 @@ export interface Player {
 }
 
 export interface Session {
-  player: Player;
+  user: User;
   /** The player access token (PAT). `null` until the first refresh after a reload. */
   accessToken: string | null;
   /** When the PAT expires, in milliseconds since the epoch. */
@@ -88,23 +88,4 @@ export interface PlayerAccessTokenClaims {
   exp: number;
   jti?: string;
   [claim: string]: unknown;
-}
-
-// Wire shapes of the player API (snake_case).
-export interface ApiPlayer {
-  id: string;
-  user_id: string;
-  email: string;
-  email_verified: boolean;
-  display_name: string;
-  username?: string | null;
-}
-
-export interface ApiTokens {
-  access_token: string;
-  token_type: "Bearer";
-  expires_in: number;
-  /** `null` when an already-rotated token was replayed inside the grace window. */
-  refresh_token: string | null;
-  player: ApiPlayer;
 }

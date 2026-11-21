@@ -1,8 +1,9 @@
 // Test doubles: a fake clock, Web Locks, BroadcastChannel and shared storage,
 // so one process can play several browser tabs.
+
+import type { ApiPlayer, ApiTokens } from "./api";
 import type { ExwaveRuntime } from "./client";
 import { encodePublishableKey } from "./publishable-key";
-import type { ApiPlayer, ApiTokens } from "./types";
 
 export const PLATFORM_ID = "6f1c2a10-5a3e-4c2b-9d4e-0a1b2c3d4e5f";
 export const AUTH_ORIGIN = "https://auth.example.test";

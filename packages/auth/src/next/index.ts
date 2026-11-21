@@ -18,10 +18,10 @@ import type {
   EmailInput,
   PasswordResetConfirmInput,
   PlatformConfig,
-  Player,
   SignInInput,
   SignUpInput,
   SignUpResult,
+  User,
 } from "../types";
 
 export type { SignOutReason } from "../client";
@@ -36,7 +36,7 @@ export interface ExwaveNextOptions extends Partial<ExwaveServerAuthOptions> {
 
 /** What server code may see. The refresh token stays in the cookie. */
 export interface NextSession {
-  player: Player;
+  user: User;
   accessToken: string;
   expiresAt: number;
 }
@@ -148,14 +148,14 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
       return { GET: handler, POST: handler };
     },
 
-    /** The signed-in player from the cookie, or `null`. Safe in Server Components. */
-    async getPlayer(): Promise<Player | null> {
-      return (await readSession())?.player ?? null;
+    /** The signed-in user from the cookie, or `null`. Safe in Server Components. */
+    async getUser(): Promise<User | null> {
+      return (await readSession())?.user ?? null;
     },
 
     /**
      * Why the last session in this browser ended, for the sign-in page:
-     * `player_locked`, `invalid_refresh_token` (ended elsewhere or expired),
+     * `account_locked`, `invalid_refresh_token` (ended elsewhere or expired),
      * `signed_out_everywhere` or `signed_out`. `null` after 5 minutes or a new
      * sign-in. Safe in Server Components.
      */
@@ -172,12 +172,13 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
     async getSession(): Promise<NextSession | null> {
       const session = await readSession();
       if (!session) return null;
-      const { player, accessToken, expiresAt } = session;
-      return { player, accessToken, expiresAt };
+      const { user, accessToken, expiresAt } = session;
+      return { user, accessToken, expiresAt };
     },
 
     /**
-     * A PAT with at least 60 s left. Server Functions and Route Handlers
+     * A player access token (PAT) with at least 60 s left, to hand to a game.
+     * Server Functions and Route Handlers
      * refresh and store the rotated cookie. Server Components cannot set
      * cookies, so they never refresh (a lost rotation would end the session):
      * they rely on `proxy` and get `null` once the PAT has expired.
@@ -218,22 +219,22 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
         ...input,
         redirectTo: await link(input.redirectTo, paths.resetPassword),
       }),
-    async signIn(input: SignInInput): Promise<Player> {
+    async signIn(input: SignInInput): Promise<User> {
       const session = await server().signIn(input);
       await persist(session);
-      return session.player;
+      return session.user;
     },
-    async verifyEmail(input: CodeInput): Promise<Player> {
+    async verifyEmail(input: CodeInput): Promise<User> {
       const session = await server().verifyEmail(input);
       await persist(session);
-      return session.player;
+      return session.user;
     },
     async confirmPasswordReset(
       input: PasswordResetConfirmInput,
-    ): Promise<Player> {
+    ): Promise<User> {
       const session = await server().confirmPasswordReset(input);
       await persist(session);
-      return session.player;
+      return session.user;
     },
     async signOut({ everywhere = false } = {}) {
       const session = await readSession();

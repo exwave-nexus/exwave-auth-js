@@ -40,10 +40,11 @@ function sameOrigin(request: Request): boolean {
  *
  * - `POST sign-up | sign-in | verify-email | verify-email/resend |
  *   password-reset | password-reset/confirm | sign-out` (camelCase JSON bodies)
- * - `GET session`: `{player, expiresAt}`, refreshing when needed; signed out,
- *   `{player: null, expiresAt: null, signOutReason}` says why (or `null`)
- * - `GET token`: `{access_token, token_type, expires_in}` for a game on the
- *   page, same origin only (`Sec-Fetch-Site: same-origin`)
+ * - `GET session`: `{user, expiresAt}`, refreshing when needed; signed out,
+ *   `{user: null, expiresAt: null, signOutReason}` says why (or `null`)
+ * - `GET token`: a player access token, `{access_token, token_type,
+ *   expires_in}`, to hand to a game on the page; same origin only
+ *   (`Sec-Fetch-Site: same-origin`)
  * - `GET config`
  */
 export async function handleAuthRequest(
@@ -59,7 +60,7 @@ export async function handleAuthRequest(
   // Starting a session forgets why the last one ended.
   const signedIn = async (session: ServerSession, status = 200) =>
     json(
-      { player: session.player, expiresAt: session.expiresAt },
+      { user: session.user, expiresAt: session.expiresAt },
       status,
       setCookies(
         await auth.sessionCookie(session, secure),
@@ -166,7 +167,7 @@ export async function handleAuthRequest(
           return token
             ? json({ error: "not_signed_in" }, 401)
             : json({
-                player: null,
+                user: null,
                 expiresAt: null,
                 signOutReason: auth.readSignOutReason(request),
               });
@@ -183,7 +184,7 @@ export async function handleAuthRequest(
           return token
             ? json({ error: result.error.code }, result.error.status, headers)
             : json(
-                { player: null, expiresAt: null, signOutReason: result.reason },
+                { user: null, expiresAt: null, signOutReason: result.reason },
                 200,
                 headers,
               );
@@ -192,7 +193,7 @@ export async function handleAuthRequest(
           result.cookie === "write"
             ? setCookies(await auth.sessionCookie(result.session, secure))
             : [];
-        const { accessToken, expiresAt, player } = result.session;
+        const { accessToken, expiresAt, user } = result.session;
         return token
           ? json(
               {
@@ -203,7 +204,7 @@ export async function handleAuthRequest(
               200,
               headers,
             )
-          : json({ player, expiresAt }, 200, headers);
+          : json({ user, expiresAt }, 200, headers);
       }
       case "GET config":
         return json(await auth.getConfig());

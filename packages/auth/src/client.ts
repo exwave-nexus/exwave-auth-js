@@ -1,18 +1,17 @@
-import { createPlayerApi, toPlayer } from "./api";
+import { type ApiTokens, createPlayerApi, toUser } from "./api";
 import { ExwaveAuthError, isExwaveAuthError } from "./errors";
 import { resolveStorage, type StorageOption } from "./storage";
 import type {
-  ApiTokens,
   CodeInput,
   EmailInput,
   EmailLink,
   PasswordResetConfirmInput,
   PlatformConfig,
-  Player,
   Session,
   SignInInput,
   SignUpInput,
   SignUpResult,
+  User,
 } from "./types";
 
 /** Refresh the PAT this long before it expires. */
@@ -20,7 +19,6 @@ export const REFRESH_MARGIN_MS = 60_000;
 const RETRY_MS = 10_000;
 /** Auth serves config with `max-age=60`. */
 export const CONFIG_TTL_MS = 60_000;
-const ENDS_SESSION = new Set(["invalid_refresh_token", "player_locked"]);
 
 export type AuthChangeEvent =
   | "INITIAL_SESSION"
@@ -29,24 +27,34 @@ export type AuthChangeEvent =
   | "TOKEN_REFRESHED";
 
 /**
- * Why the player is signed out:
+ * Why the user is signed out:
  * - `signed_out`: they signed out on this device;
  * - `signed_out_everywhere`: they signed out on every device, from this one;
  * - `invalid_refresh_token`: the session ended elsewhere (sign out everywhere
  *   or a password reset on another device) or expired;
- * - `player_locked`: the platform locked the player (Nexus → Players).
+ * - `account_locked`: the platform locked the account (Nexus → Auth → Users).
  */
 export type SignOutReason =
   | "signed_out"
   | "signed_out_everywhere"
   | "invalid_refresh_token"
-  | "player_locked";
+  | "account_locked";
+
+/** The reason an API error ends the session for, or `undefined` when it doesn't. */
+export function toSignOutReason(
+  code: string,
+): "invalid_refresh_token" | "account_locked" | undefined {
+  if (code === "invalid_refresh_token") return code;
+  // The API's code for a locked account.
+  if (code === "player_locked") return "account_locked";
+  return undefined;
+}
 
 /** How long a reload or a new tab still reports why the last session ended. */
 export const SIGN_OUT_REASON_TTL_MS = 5 * 60_000;
 
 /**
- * `info.reason` says why the player is signed out: on `SIGNED_OUT`, and on
+ * `info.reason` says why the user is signed out: on `SIGNED_OUT`, and on
  * `INITIAL_SESSION` when the stored session ended while loading or in the
  * last 5 minutes (in any tab).
  */
@@ -106,11 +114,14 @@ export interface ExwaveAuth {
   signOut(options?: { everywhere?: boolean }): Promise<void>;
   resetPassword(input: EmailInput): Promise<void>;
   confirmPasswordReset(input: PasswordResetConfirmInput): Promise<Session>;
-  /** A PAT valid for at least 60 s, refreshing if needed; `null` when signed out. */
+  /**
+   * A player access token (PAT) valid for at least 60 s, refreshing if
+   * needed; `null` when signed out. PATs authenticate to games.
+   */
   getPlayerAccessToken(): Promise<string | null>;
   getSession(): Promise<Session | null>;
-  /** Fetches the player from `players/me` with the current PAT. */
-  getPlayer(): Promise<Player>;
+  /** Fetches the user from `players/me` with the current PAT. */
+  getUser(): Promise<User>;
   /** Calls the listener with `INITIAL_SESSION` once loaded, then on every change. */
   onAuthStateChange(listener: AuthChangeListener): () => void;
   getConfig(): Promise<PlatformConfig>;
@@ -120,7 +131,7 @@ export interface ExwaveAuth {
 
 interface Stored {
   refreshToken: string;
-  player: Player;
+  user: User;
 }
 
 /** Left in storage when a session ends, so other tabs and reloads learn why. */
@@ -140,7 +151,7 @@ const parse = (raw: string | null): Entry => {
 };
 
 const isStored = (entry: Entry): entry is Stored =>
-  !!(entry.refreshToken && entry.player);
+  !!(entry.refreshToken && entry.user);
 
 type TabMessage =
   | { type: "SIGNED_IN" | "TOKEN_REFRESHED"; session: Session }
@@ -278,13 +289,13 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
     tokens: ApiTokens,
     event: "SIGNED_IN" | "TOKEN_REFRESHED",
   ): Promise<Session> {
-    const player = toPlayer(tokens.player);
+    const user = toUser(tokens.player);
     // A null refresh token means another tab or request already rotated it:
     // keep what is stored.
     if (tokens.refresh_token)
-      await write({ refreshToken: tokens.refresh_token, player });
+      await write({ refreshToken: tokens.refresh_token, user });
     const next: Session = {
-      player,
+      user,
       accessToken: tokens.access_token,
       expiresAt: rt.now() + tokens.expires_in * 1000,
     };
@@ -320,8 +331,10 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
         );
         return next.accessToken;
       } catch (error) {
-        if (isExwaveAuthError(error) && ENDS_SESSION.has(error.code))
-          await end(error.code as SignOutReason);
+        const reason = isExwaveAuthError(error)
+          ? toSignOutReason(error.code)
+          : undefined;
+        if (reason) await end(reason);
         else
           schedule(
             isExwaveAuthError(error) && error.retryAfter
@@ -354,14 +367,14 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
         return;
       }
       const incoming = message.session;
-      const samePlayer = session?.player.id === incoming.player.id;
+      const sameUser = session?.user.id === incoming.user.id;
       if (
-        samePlayer &&
+        sameUser &&
         session?.expiresAt &&
         (incoming.expiresAt ?? 0) <= session.expiresAt
       )
         return;
-      setSession(incoming, samePlayer ? "TOKEN_REFRESHED" : "SIGNED_IN");
+      setSession(incoming, sameUser ? "TOKEN_REFRESHED" : "SIGNED_IN");
     };
 
   const offStorage = multiTab
@@ -377,7 +390,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
         } else if (!session && !channel)
           // Without a channel, sign-ins arrive here, with no PAT yet.
           setSession(
-            { player: entry.player, accessToken: null, expiresAt: null },
+            { user: entry.user, accessToken: null, expiresAt: null },
             "SIGNED_IN",
           );
       })
@@ -392,7 +405,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
   const ready = (async () => {
     const stored = await readEntry();
     if (!session && isStored(stored))
-      session = { player: stored.player, accessToken: null, expiresAt: null };
+      session = { user: stored.user, accessToken: null, expiresAt: null };
     else if (
       !session &&
       stored.ended &&
@@ -472,7 +485,7 @@ export function createExwaveAuth(options: ExwaveAuthOptions): ExwaveAuth {
       await ready;
       return session;
     },
-    async getPlayer() {
+    async getUser() {
       const token = await auth.getPlayerAccessToken();
       if (!token) throw new ExwaveAuthError("not_signed_in");
       return api.me(token);

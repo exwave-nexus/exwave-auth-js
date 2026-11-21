@@ -2,19 +2,36 @@ import { ExwaveAuthError, isExwaveAuthError } from "./errors";
 import { checkPassword } from "./password";
 import { decodePublishableKey } from "./publishable-key";
 import type {
-  ApiPlayer,
-  ApiTokens,
   CodeInput,
   EmailInput,
   PasswordResetConfirmInput,
   PlatformConfig,
-  Player,
   SignInInput,
   SignUpInput,
   SignUpResult,
+  User,
 } from "./types";
 
 type Json = Record<string, unknown>;
+
+// Wire shapes of the player API (snake_case). Internal: the public types are camelCase.
+export interface ApiPlayer {
+  id: string;
+  user_id: string;
+  email: string;
+  email_verified: boolean;
+  display_name: string;
+  username?: string | null;
+}
+
+export interface ApiTokens {
+  access_token: string;
+  token_type: "Bearer";
+  expires_in: number;
+  /** `null` when an already-rotated token was replayed inside the grace window. */
+  refresh_token: string | null;
+  player: ApiPlayer;
+}
 
 /**
  * The player API under `/orbit/v1/platforms/:platformId/`, with no state. The
@@ -145,7 +162,7 @@ export function createPlayerApi(
           password: input.password,
         }),
       ),
-    async me(accessToken: string): Promise<Player> {
+    async me(accessToken: string): Promise<User> {
       const data = await call<{ player?: ApiPlayer } & ApiPlayer>(
         "GET",
         "players/me",
@@ -153,14 +170,14 @@ export function createPlayerApi(
         accessToken,
       );
       // Auth answers with the bare player; accept a wrapped one too.
-      return toPlayer(data.player ?? data);
+      return toUser(data.player ?? data);
     },
   };
 }
 
 export type PlayerApi = ReturnType<typeof createPlayerApi>;
 
-export function toPlayer(p: ApiPlayer): Player {
+export function toUser(p: ApiPlayer): User {
   return {
     id: p.id,
     userId: p.user_id,

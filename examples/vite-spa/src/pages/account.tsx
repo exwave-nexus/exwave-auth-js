@@ -1,4 +1,4 @@
-import { decodePlayerAccessToken, type Player } from "@exwave-nexus/auth";
+import { decodePlayerAccessToken, type User } from "@exwave-nexus/auth";
 import { useExwave } from "@exwave-nexus/auth/react";
 import { useEffect, useState } from "react";
 import { describeError } from "../errors";
@@ -21,9 +21,7 @@ const clock = (ms: number) => {
 export function AccountPage() {
   const { auth, session, event } = useExwave();
   const now = useNow();
-  const [api, setApi] = useState<{ player?: Player; error?: string } | null>(
-    null,
-  );
+  const [api, setApi] = useState<{ user?: User; error?: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
@@ -32,14 +30,14 @@ export function AccountPage() {
   }, [session]);
   if (!session) return null;
 
-  const { player, accessToken, expiresAt } = session;
+  const { user, accessToken, expiresAt } = session;
   const claims = accessToken ? decodePlayerAccessToken(accessToken) : null;
 
   // "Protected API": players/me on Exwave Auth, called with the PAT.
   const callApi = async () => {
     setBusy(true);
     try {
-      setApi({ player: await auth.getPlayer() });
+      setApi({ user: await auth.getUser() });
     } catch (error) {
       setApi({ error: describeError(error) });
     } finally {
@@ -59,19 +57,18 @@ export function AccountPage() {
   return (
     <>
       <section className="card">
-        <h1>{player.displayName}</h1>
+        <h1>{user.displayName}</h1>
         <dl>
           <dt>Email</dt>
           <dd>
-            {player.email}{" "}
-            {player.emailVerified ? "✓ verified" : "(not verified)"}
+            {user.email} {user.emailVerified ? "✓ verified" : "(not verified)"}
           </dd>
           <dt>Username</dt>
-          <dd>{player.username ?? "—"}</dd>
-          <dt>Player ID</dt>
-          <dd>{player.id}</dd>
+          <dd>{user.username ?? "—"}</dd>
+          <dt>Exwave ID</dt>
+          <dd>{user.id}</dd>
           <dt>User ID</dt>
-          <dd>{player.userId}</dd>
+          <dd>{user.userId}</dd>
         </dl>
       </section>
 
@@ -97,7 +94,7 @@ export function AccountPage() {
           </button>
         </div>
         {api?.error && <p className="error">{api.error}</p>}
-        {api?.player && <pre>{JSON.stringify(api.player, null, 2)}</pre>}
+        {api?.user && <pre>{JSON.stringify(api.user, null, 2)}</pre>}
       </section>
 
       <section className="card row">
