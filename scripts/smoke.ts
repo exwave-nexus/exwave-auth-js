@@ -34,11 +34,28 @@ function step(title: string) {
   console.log(`\n▶ ${title}`);
 }
 
-function run(command: string, args: string[], cwd: string, env = {}) {
+/**
+ * For the shadcn CLI: install with npm, as `npx shadcn` does for most people.
+ * Under `bun run smoke`, npm_config_user_agent names bun and shadcn follows
+ * it, but bun looks our packages' dependencies on each other up on npm, which
+ * fails until the new version is published. npm takes the tarball we install
+ * as the version they ask for.
+ */
+const NPM_AGENT = { npm_config_user_agent: undefined };
+
+function run(
+  command: string,
+  args: string[],
+  cwd: string,
+  env: Record<string, string | undefined> = {},
+) {
+  const merged = { ...process.env, NEXT_TELEMETRY_DISABLED: "1", ...env };
   const result = spawnSync(command, args, {
     cwd,
     stdio: "inherit",
-    env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1", ...env },
+    env: Object.fromEntries(
+      Object.entries(merged).filter(([, value]) => value !== undefined),
+    ),
   });
   if (result.status !== 0)
     throw new Error(`${command} ${args.join(" ")} failed in ${cwd}`);
@@ -244,9 +261,10 @@ async function registry(tarballs: Record<string, string>) {
       "--no-monorepo",
     ],
     work,
+    NPM_AGENT,
   );
   const app = join(work, "shadcn-app");
-  run("npx", ["-y", SHADCN, "add", local, "-y", "-o"], app);
+  run("npx", ["-y", SHADCN, "add", local, "-y", "-o"], app, NPM_AGENT);
   // The one step the block leaves to you (its install note says so).
   const layoutPath = join(app, "app/layout.tsx");
   const layout = await readFile(layoutPath, "utf8");
@@ -297,6 +315,7 @@ async function registryApp(tarballs: Record<string, string>) {
       "--no-monorepo",
     ],
     work,
+    NPM_AGENT,
   );
   const app = join(work, "shadcn-exwave-app");
   const source = (path: string) =>
