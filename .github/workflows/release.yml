@@ -1,9 +1,11 @@
 name: Release
 
-# Push a tag named after the packages' shared version (v0.2.0) to publish
-# @exwave-nexus/auth, @exwave-nexus/auth-mock and create-exwave to npm as
-# public packages, with the NPM_TOKEN secret (a granular npm token that can
-# publish them).
+# Push a tag named after the packages' shared version (v0.3.0) once the
+# packages are on npm: they are published by hand (AGENTS.md, Releases). This
+# checks the tag, runs the checks and the smoke test, then publishes any
+# version npm doesn't have yet with the NPM_TOKEN secret. That last step fails
+# for now, because npm restricts tokens that bypass 2FA; trusted publishing
+# from these hosted runners would replace the token.
 on:
   push:
     tags: ["v*"]
@@ -17,7 +19,9 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: exwave-root
+    # Hosted: the repository is public, so the exwave-root runners never take
+    # its jobs, and npm's trusted publishing only works from hosted runners.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: oven-sh/setup-bun@v2.2.0

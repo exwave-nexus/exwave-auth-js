@@ -101,12 +101,18 @@ Concise, imperative commit subjects. PRs say why, and how it was verified.
 ## Releases
 
 The packages share one version and are public on npm. Bump `version` in
-every `packages/*/package.json`, merge to `main`, then push a matching tag
-(`git tag v0.3.0 && git push origin v0.3.0`). The Release workflow checks the
-tag, runs the checks and the smoke test, stages, and publishes every package
-(`@exwave-nexus/auth`, `-react`, `-nextjs`, `-mock`, then `create-exwave`)
-with the `NPM_TOKEN` repository secret (a granular npm token that can publish
-them), skipping any version already published. A new package's first publish
-needs a token that may create packages in the `@exwave-nexus` scope. Published versions can't be
+every `packages/*/package.json` and merge to `main`. Then, from a clean
+checkout of that commit, `bun run stage`, and a maintainer publishes each
+`packages/*/publish/` by hand, dependencies first (`@exwave-nexus/auth`,
+`-react`, `-nextjs`, `-mock`, then `create-exwave`): `npm login`, then `npm
+publish ./packages/<name>/publish --access public`, confirming each with 2FA.
+CI can't publish: npm restricts tokens that bypass 2FA, and trusted
+publishing isn't set up. Last, push the matching tag (`git tag v0.3.0 && git
+push origin v0.3.0`): the Release workflow checks it, runs the checks and the
+smoke test, and skips the versions already on npm.
+
+The repository is public, so its workflows run on GitHub's hosted runners
+(`ubuntu-latest`): the org's `exwave-root` runners never take public
+repositories' jobs. Published versions can't be
 overwritten. After a release, the website copies `registry/public/r` (see its
 `scripts/sync-registry.ts`).
