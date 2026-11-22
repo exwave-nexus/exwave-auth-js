@@ -21,6 +21,7 @@
     "stage": "bun run build && bun scripts/stage.ts packages/auth && bun scripts/stage.ts packages/auth-react && bun scripts/stage.ts packages/auth-nextjs && bun scripts/stage.ts packages/auth-mock && bun scripts/stage.ts packages/create",
     "check-versions": "bun scripts/check-versions.ts",
     "dev:vite": "bun run --cwd packages/create/templates/vite dev",
+    "dev:next-shadcn": "bun run --cwd packages/create/templates/next-shadcn dev",
     "registry:build": "bun scripts/registry.ts build",
     "templates:sync": "bun scripts/templates.ts sync",
     "templates:check": "bun scripts/templates.ts check",

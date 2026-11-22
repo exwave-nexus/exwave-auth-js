@@ -7,6 +7,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // The auth routes refresh on their own.
-  matcher: ["/((?!api/exwave|_next/static|_next/image|favicon.ico).*)"],
+  // The auth routes refresh on their own; static files need no session.
+  matcher: [
+    "/((?!api/exwave|_next/static|_next/image|favicon.ico|icon.svg|exwave.svg).*)",
+  ],
 };

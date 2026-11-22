@@ -285,11 +285,6 @@
           "target": "app/(auth)/reset-password/page.tsx"
         },
         {
-          "path": "registry/next/app/(auth)/layout.tsx",
-          "type": "registry:page",
-          "target": "app/(auth)/layout.tsx"
-        },
-        {
           "path": "registry/next/app/api/exwave/[...action]/route.ts",
           "type": "registry:file",
           "target": "app/api/exwave/[...action]/route.ts"
@@ -303,6 +298,11 @@
           "path": "registry/next/proxy.ts",
           "type": "registry:file",
           "target": "~/proxy.ts"
+        },
+        {
+          "path": "registry/next/app/(auth)/layout.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/layout.tsx"
         }
       ],
       "envVars": {
@@ -380,6 +380,356 @@
         "VITE_EXWAVE_PUBLISHABLE_KEY": "exw_pk_from_nexus"
       },
       "docs": "Set VITE_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) in .env.local, then wrap your app in <ExwaveProvider publishableKey={import.meta.env.VITE_EXWAVE_PUBLISHABLE_KEY} navigate={yourRouterNavigate}> from @exwave-nexus/auth-react, and give each form a route. Guide: https://www.exwave.net/docs/auth/get-started/"
+    },
+    {
+      "name": "exwave-theme",
+      "type": "registry:theme",
+      "title": "Exwave theme",
+      "description": "Exwave's colors for light and dark, Nunito Sans, and success and warning colors, for any shadcn/ui app.",
+      "dependencies": [
+        "@fontsource-variable/nunito-sans"
+      ],
+      "cssVars": {
+        "theme": {
+          "font-sans": "\"Nunito Sans Variable\", ui-sans-serif, system-ui, sans-serif",
+          "color-success": "var(--success)",
+          "color-success-muted": "var(--success-muted)",
+          "color-warning": "var(--warning)",
+          "color-warning-muted": "var(--warning-muted)"
+        },
+        "light": {
+          "background": "#ffffff",
+          "foreground": "#121719",
+          "card": "#ffffff",
+          "card-foreground": "#121719",
+          "popover": "#ffffff",
+          "popover-foreground": "#121719",
+          "primary": "#006fa7",
+          "primary-foreground": "#ffffff",
+          "secondary": "#eef3f5",
+          "secondary-foreground": "#121719",
+          "muted": "#eef3f5",
+          "muted-foreground": "#5d707a",
+          "accent": "#eaf5fb",
+          "accent-foreground": "#005d8e",
+          "destructive": "#b42318",
+          "border": "#e3e8eb",
+          "input": "#84949d",
+          "ring": "#006fa7",
+          "success": "#157f3c",
+          "success-muted": "#ecfdf3",
+          "warning": "#7a5713",
+          "warning-muted": "#fbf4e4",
+          "chart-1": "#006fa7",
+          "chart-2": "#21b6f3",
+          "chart-3": "#d6b064",
+          "chart-4": "#157f3c",
+          "chart-5": "#5d707a",
+          "radius": "0.625rem",
+          "sidebar": "#f6f8f9",
+          "sidebar-foreground": "#121719",
+          "sidebar-primary": "#006fa7",
+          "sidebar-primary-foreground": "#ffffff",
+          "sidebar-accent": "#eaf5fb",
+          "sidebar-accent-foreground": "#005d8e",
+          "sidebar-border": "#e3e8eb",
+          "sidebar-ring": "#006fa7"
+        },
+        "dark": {
+          "background": "#0c151a",
+          "foreground": "#f5f7f7",
+          "card": "#111b21",
+          "card-foreground": "#f5f7f7",
+          "popover": "#111b21",
+          "popover-foreground": "#f5f7f7",
+          "primary": "#006a98",
+          "primary-foreground": "#ffffff",
+          "secondary": "#17242b",
+          "secondary-foreground": "#f5f7f7",
+          "muted": "#17242b",
+          "muted-foreground": "#a1aeb3",
+          "accent": "#102530",
+          "accent-foreground": "#21b6f3",
+          "destructive": "#ff8f87",
+          "border": "#ffffff1a",
+          "input": "#56676f",
+          "ring": "#21b6f3",
+          "success": "#5fd38d",
+          "success-muted": "#0f2418",
+          "warning": "#d6b064",
+          "warning-muted": "#231e12",
+          "chart-1": "#21b6f3",
+          "chart-2": "#83c9ec",
+          "chart-3": "#d6b064",
+          "chart-4": "#5fd38d",
+          "chart-5": "#a1aeb3",
+          "sidebar": "#101415",
+          "sidebar-foreground": "#f5f7f7",
+          "sidebar-primary": "#21b6f3",
+          "sidebar-primary-foreground": "#0c151a",
+          "sidebar-accent": "#102530",
+          "sidebar-accent-foreground": "#21b6f3",
+          "sidebar-border": "#ffffff1a",
+          "sidebar-ring": "#21b6f3"
+        }
+      },
+      "docs": "Import \"@fontsource-variable/nunito-sans\" once, in app/layout.tsx (or your entry file), so the font loads."
+    },
+    {
+      "name": "exwave-app",
+      "type": "registry:base",
+      "title": "Exwave Auth app for Next.js",
+      "description": "A whole Next.js app with Exwave Auth on shadcn/ui, in Exwave's colors: the home page, every auth screen, the account page, the /api/exwave routes and the session proxy.",
+      "config": {
+        "style": "radix-nova",
+        "iconLibrary": "lucide",
+        "rsc": true,
+        "tailwind": {
+          "baseColor": "neutral"
+        },
+        "registries": {
+          "@exwave": "https://www.exwave.net/r/{name}.json"
+        }
+      },
+      "dependencies": [
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0",
+        "@exwave-nexus/auth-nextjs@^0.3.0",
+        "lucide-react",
+        "@fontsource-variable/nunito-sans",
+        "next-themes"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "card",
+        "avatar",
+        "dropdown-menu",
+        "alert",
+        "badge"
+      ],
+      "cssVars": {
+        "theme": {
+          "font-sans": "\"Nunito Sans Variable\", ui-sans-serif, system-ui, sans-serif",
+          "color-success": "var(--success)",
+          "color-success-muted": "var(--success-muted)",
+          "color-warning": "var(--warning)",
+          "color-warning-muted": "var(--warning-muted)"
+        },
+        "light": {
+          "background": "#ffffff",
+          "foreground": "#121719",
+          "card": "#ffffff",
+          "card-foreground": "#121719",
+          "popover": "#ffffff",
+          "popover-foreground": "#121719",
+          "primary": "#006fa7",
+          "primary-foreground": "#ffffff",
+          "secondary": "#eef3f5",
+          "secondary-foreground": "#121719",
+          "muted": "#eef3f5",
+          "muted-foreground": "#5d707a",
+          "accent": "#eaf5fb",
+          "accent-foreground": "#005d8e",
+          "destructive": "#b42318",
+          "border": "#e3e8eb",
+          "input": "#84949d",
+          "ring": "#006fa7",
+          "success": "#157f3c",
+          "success-muted": "#ecfdf3",
+          "warning": "#7a5713",
+          "warning-muted": "#fbf4e4",
+          "chart-1": "#006fa7",
+          "chart-2": "#21b6f3",
+          "chart-3": "#d6b064",
+          "chart-4": "#157f3c",
+          "chart-5": "#5d707a",
+          "radius": "0.625rem",
+          "sidebar": "#f6f8f9",
+          "sidebar-foreground": "#121719",
+          "sidebar-primary": "#006fa7",
+          "sidebar-primary-foreground": "#ffffff",
+          "sidebar-accent": "#eaf5fb",
+          "sidebar-accent-foreground": "#005d8e",
+          "sidebar-border": "#e3e8eb",
+          "sidebar-ring": "#006fa7"
+        },
+        "dark": {
+          "background": "#0c151a",
+          "foreground": "#f5f7f7",
+          "card": "#111b21",
+          "card-foreground": "#f5f7f7",
+          "popover": "#111b21",
+          "popover-foreground": "#f5f7f7",
+          "primary": "#006a98",
+          "primary-foreground": "#ffffff",
+          "secondary": "#17242b",
+          "secondary-foreground": "#f5f7f7",
+          "muted": "#17242b",
+          "muted-foreground": "#a1aeb3",
+          "accent": "#102530",
+          "accent-foreground": "#21b6f3",
+          "destructive": "#ff8f87",
+          "border": "#ffffff1a",
+          "input": "#56676f",
+          "ring": "#21b6f3",
+          "success": "#5fd38d",
+          "success-muted": "#0f2418",
+          "warning": "#d6b064",
+          "warning-muted": "#231e12",
+          "chart-1": "#21b6f3",
+          "chart-2": "#83c9ec",
+          "chart-3": "#d6b064",
+          "chart-4": "#5fd38d",
+          "chart-5": "#a1aeb3",
+          "sidebar": "#101415",
+          "sidebar-foreground": "#f5f7f7",
+          "sidebar-primary": "#21b6f3",
+          "sidebar-primary-foreground": "#0c151a",
+          "sidebar-accent": "#102530",
+          "sidebar-accent-foreground": "#21b6f3",
+          "sidebar-border": "#ffffff1a",
+          "sidebar-ring": "#21b6f3"
+        }
+      },
+      "files": [
+        {
+          "path": "registry/exwave/sign-in-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-in-form.tsx"
+        },
+        {
+          "path": "registry/exwave/auth-link.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/auth-link.tsx"
+        },
+        {
+          "path": "registry/exwave/sign-up-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-up-form.tsx"
+        },
+        {
+          "path": "registry/exwave/password-rules.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/password-rules.tsx"
+        },
+        {
+          "path": "registry/exwave/verify-email.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/verify-email.tsx"
+        },
+        {
+          "path": "registry/exwave/forgot-password-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/forgot-password-form.tsx"
+        },
+        {
+          "path": "registry/exwave/reset-password-form.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/reset-password-form.tsx"
+        },
+        {
+          "path": "registry/exwave/sign-out-button.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/sign-out-button.tsx"
+        },
+        {
+          "path": "registry/exwave/user-button.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/user-button.tsx"
+        },
+        {
+          "path": "registry/next/app/(auth)/sign-in/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/sign-in/page.tsx"
+        },
+        {
+          "path": "registry/next/app/(auth)/sign-up/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/sign-up/page.tsx"
+        },
+        {
+          "path": "registry/next/app/(auth)/verify/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/verify/page.tsx"
+        },
+        {
+          "path": "registry/next/app/(auth)/forgot-password/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/forgot-password/page.tsx"
+        },
+        {
+          "path": "registry/next/app/(auth)/reset-password/page.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/reset-password/page.tsx"
+        },
+        {
+          "path": "registry/next/app/api/exwave/[...action]/route.ts",
+          "type": "registry:file",
+          "target": "app/api/exwave/[...action]/route.ts"
+        },
+        {
+          "path": "registry/next/lib/exwave.ts",
+          "type": "registry:lib",
+          "target": "@lib/exwave.ts"
+        },
+        {
+          "path": "registry/next/proxy.ts",
+          "type": "registry:file",
+          "target": "~/proxy.ts"
+        },
+        {
+          "path": "registry/next-app/app/layout.tsx",
+          "type": "registry:page",
+          "target": "app/layout.tsx"
+        },
+        {
+          "path": "registry/next-app/app/page.tsx",
+          "type": "registry:page",
+          "target": "app/page.tsx"
+        },
+        {
+          "path": "registry/next-app/app/account/page.tsx",
+          "type": "registry:page",
+          "target": "app/account/page.tsx"
+        },
+        {
+          "path": "registry/next-app/app/(auth)/layout.tsx",
+          "type": "registry:page",
+          "target": "app/(auth)/layout.tsx"
+        },
+        {
+          "path": "registry/next-app/components/theme-provider.tsx",
+          "type": "registry:component",
+          "target": "@components/theme-provider.tsx"
+        },
+        {
+          "path": "registry/next-app/components/exwave/backend-notice.tsx",
+          "type": "registry:component",
+          "target": "@components/exwave/backend-notice.tsx"
+        },
+        {
+          "path": "registry/next-app/lib/local-mock.ts",
+          "type": "registry:lib",
+          "target": "@lib/local-mock.ts"
+        },
+        {
+          "path": "packages/create/shared/exwave.svg",
+          "type": "registry:file",
+          "target": "~/public/exwave.svg"
+        },
+        {
+          "path": "packages/create/shared/exwave.svg",
+          "type": "registry:file",
+          "target": "~/app/icon.svg"
+        }
+      ],
+      "envVars": {
+        "NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY": "exw_pk_from_nexus",
+        "EXWAVE_COOKIE_SECRET": ""
+      },
+      "docs": "Set NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) and EXWAVE_COOKIE_SECRET (openssl rand -base64 32) in .env.local, then npm run dev. Guide: https://www.exwave.net/docs/auth/get-started/"
     }
   ]
 }

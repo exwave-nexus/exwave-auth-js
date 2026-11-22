@@ -10,7 +10,11 @@ import { createPrompt } from "./prompt";
 import { checkKey, ScaffoldError, scaffold } from "./scaffold";
 
 const GUIDE = "https://www.exwave.net/docs/auth/get-started/";
-const PORTS: Record<Template, number> = { next: 3000, vite: 5173 };
+const PORTS: Record<Template, number> = {
+  next: 3000,
+  vite: 5173,
+  "next-shadcn": 3000,
+};
 
 /** Published: dist/templates. In this repo: packages/create/templates. */
 function templatesDir(): string {
@@ -40,7 +44,7 @@ async function main(argv: string[]) {
       args.template ?? (await prompt?.choose("Which kind of app?", TEMPLATES));
     if (!template)
       throw new UsageError(
-        "Choose a template: --template next or --template vite",
+        "Choose a template: --template next, vite or next-shadcn",
       );
     let key = args.key ?? null;
     if (args.key === undefined && prompt)

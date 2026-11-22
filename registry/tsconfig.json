@@ -13,11 +13,15 @@
     "resolveJsonModule": true,
     "types": ["node"],
     "paths": {
-      "@/components/exwave/*": ["./exwave/*"],
+      "@/components/exwave/*": ["./exwave/*", "./next-app/components/exwave/*"],
       "@/components/ui/*": ["./ui/*"],
+      "@/components/theme-provider": [
+        "./next-app/components/theme-provider.tsx"
+      ],
       "@/lib/utils": ["./lib/utils.ts"],
-      "@/lib/exwave": ["./next/lib/exwave.ts"]
+      "@/lib/exwave": ["./next/lib/exwave.ts"],
+      "@/lib/local-mock": ["./next-app/lib/local-mock.ts"]
     }
   },
-  "include": ["exwave", "ui", "lib", "next"]
+  "include": ["exwave", "ui", "lib", "next", "next-app"]
 }

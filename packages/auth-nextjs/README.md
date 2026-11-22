@@ -104,4 +104,11 @@ above, as shadcn/ui components:
 npx shadcn@latest add https://www.exwave.net/r/auth-nextjs.json
 ```
 
+Or a whole new app on shadcn/ui, in Exwave's colors, with a home page and an
+account page too:
+
+```bash
+npx shadcn@latest create -t next -n my-app https://www.exwave.net/r/exwave-app.json
+```
+
 Next.js 16 or later and React 19 or later are peer dependencies.

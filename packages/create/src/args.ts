@@ -3,6 +3,7 @@ import { parseArgs } from "node:util";
 export const TEMPLATES = {
   next: "Next.js (App Router, server sessions)",
   vite: "React with Vite (browser sessions)",
+  "next-shadcn": "Next.js with shadcn/ui and Tailwind",
 } as const;
 export type Template = keyof typeof TEMPLATES;
 
@@ -23,7 +24,8 @@ Usage
   npm create exwave@latest [dir] -- [options]
 
 Options
-  -t, --template <next|vite>  Next.js, or React with Vite
+  -t, --template <name>       next: Next.js; vite: React with Vite;
+                              next-shadcn: Next.js with shadcn/ui
   -k, --key <exw_pk_…>        Your platform's publishable key (Nexus → Auth).
                               Without one, the app uses a local mock.
       --install / --no-install
@@ -51,7 +53,7 @@ export function readArgs(argv: string[]): Args {
   const template = values.template;
   if (template !== undefined && !(template in TEMPLATES))
     throw new UsageError(
-      `Unknown template "${template}": use ${Object.keys(TEMPLATES).join(" or ")}`,
+      `Unknown template "${template}": use ${Object.keys(TEMPLATES).join(", ")}`,
     );
   return {
     dir: positionals[0],
