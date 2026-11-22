@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -61,20 +62,24 @@ export function UserButton({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">
-        <DropdownMenuLabel className="flex flex-col">
-          <span>{user.displayName}</span>
-          <span className="text-muted-foreground text-xs font-normal">
-            {user.email}
-          </span>
-        </DropdownMenuLabel>
+        {/* Base UI menus need the label in a group, and only fire onClick
+            (Radix fires it on keyboard selection too), so this works in both. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex flex-col">
+            <span>{user.displayName}</span>
+            <span className="text-muted-foreground text-xs font-normal">
+              {user.email}
+            </span>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => navigate(accountHref)}>
+        <DropdownMenuItem onClick={() => navigate(accountHref)}>
           Account
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => leave(false)}>
+        <DropdownMenuItem onClick={() => leave(false)}>
           Sign out
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => leave(true)}>
+        <DropdownMenuItem onClick={() => leave(true)}>
           Sign out everywhere
         </DropdownMenuItem>
       </DropdownMenuContent>
