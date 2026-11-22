@@ -10,7 +10,7 @@ npm run dev   # http://localhost:3000
 
 Using the local mock (no publishable key yet)? Run `npm run mock` in a second
 terminal and sign in as `player1` / `Password123!`. Email links are printed
-there.
+there. The home page says which one the app talks to.
 
 ## What's where
 
@@ -22,7 +22,12 @@ there.
 | `app/layout.tsx` | `<ExwaveProvider>` with the session from the server |
 | `app/(auth)/*` | Sign-in, sign-up, verify, forgot and reset password pages |
 | `app/account/page.tsx` | A page only signed-in users see |
-| `components/exwave/*` | The auth screens, as shadcn components: edit them freely |
+| `components/exwave/*` | The auth screens, as plain React components: edit them freely |
+| `app/globals.css` | Their styles, and the colors as CSS variables (light and dark) |
+| `lib/local-mock.ts`, `components/exwave/backend-notice.tsx` | The local mock notices: delete them once you're live |
+
+Using shadcn/ui? The same screens exist as shadcn components:
+`npx shadcn@latest add https://www.exwave.net/r/auth-nextjs.json`.
 
 ## Before you deploy
 

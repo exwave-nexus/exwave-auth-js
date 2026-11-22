@@ -1,20 +1,24 @@
-// Measures what the core costs a browser app: one client factory from
-// `@exwave-nexus/auth`, tree-shaken, bundled for the browser, minified, then
-// gzipped at level 9. An app pays for the client it imports, not both.
+// Measures what the packages cost a browser app: one client factory from
+// `@exwave-nexus/auth`, or all of `@exwave-nexus/auth-react`, tree-shaken,
+// bundled for the browser, minified, then gzipped at level 9. An app pays for
+// the client it imports, not both.
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 
 export const CORE_BUDGET_BYTES = 6 * 1024;
-/** `./react`: provider, hooks and gates, plus the core they use. React itself is the app's. */
+/** `@exwave-nexus/auth-react`: provider, hooks and gates, plus the core they use. React itself is the app's. */
 export const REACT_BUDGET_BYTES = 10 * 1024;
 
 const src = (path: string) =>
-  new URL(`../packages/auth/src/${path}`, import.meta.url).pathname;
+  new URL(`../packages/${path}`, import.meta.url).pathname;
 
-/** What `import { <names> } from "@exwave-nexus/auth<entry>"` adds to an app. */
-export async function measureImport(names: string[], entry = "index.ts") {
+/** What `import { <names> }` from an entry (under packages/) adds to an app. */
+export async function measureImport(
+  names: string[],
+  entry = "auth/src/index.ts",
+) {
   const dir = await mkdtemp(join(tmpdir(), "exwave-size-"));
   try {
     const file = join(dir, "entry.ts");
@@ -49,14 +53,17 @@ export const MEASURED: Record<
   string,
   { names: string[]; entry?: string; budget: number }
 > = {
-  "browser client": { names: ["createExwaveAuth"], budget: CORE_BUDGET_BYTES },
-  "route client": {
+  "@exwave-nexus/auth browser client": {
+    names: ["createExwaveAuth"],
+    budget: CORE_BUDGET_BYTES,
+  },
+  "@exwave-nexus/auth route client": {
     names: ["createExwaveRouteClient"],
     budget: CORE_BUDGET_BYTES,
   },
-  "./react": {
+  "@exwave-nexus/auth-react": {
     names: ["*"],
-    entry: "react/index.tsx",
+    entry: "auth-react/src/index.tsx",
     budget: REACT_BUDGET_BYTES,
   },
 };
@@ -67,7 +74,7 @@ if (import.meta.main) {
   for (const [label, { names, entry, budget }] of Object.entries(MEASURED)) {
     const size = await measureImport(names, entry);
     console.log(
-      `@exwave-nexus/auth ${label}: ${kb(size.minified)} min, ${kb(size.gzipped)} min+gz (${size.gzipped} B; budget ${kb(budget)})`,
+      `${label}: ${kb(size.minified)} min, ${kb(size.gzipped)} min+gz (${size.gzipped} B; budget ${kb(budget)})`,
     );
     over ||= size.gzipped > budget;
   }

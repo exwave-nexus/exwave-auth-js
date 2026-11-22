@@ -43,9 +43,20 @@
       }
     }
   },
-  "css": {
-    "parser": {
-      "tailwindDirectives": true
+  "overrides": [
+    {
+      "includes": [
+        "packages/create/shared/**",
+        "packages/create/templates/next/components/exwave/**",
+        "packages/create/templates/vite/**"
+      ],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noImgElement": "off"
+          }
+        }
+      }
     }
-  }
+  ]
 }

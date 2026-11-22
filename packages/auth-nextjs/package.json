@@ -1,0 +1,46 @@
+{
+  "name": "@exwave-nexus/auth-nextjs",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Exwave Auth for the Next.js App Router: the session in an httpOnly cookie, read in Server Components, with route handlers, a proxy and the provider.",
+  "keywords": [
+    "exwave",
+    "auth",
+    "nextjs",
+    "next",
+    "react"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/exwave-nexus/exwave-auth-js.git",
+    "directory": "packages/auth-nextjs"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "bun build.ts",
+    "stage": "bun build.ts && bun ../../scripts/stage.ts ."
+  },
+  "dependencies": {
+    "@exwave-nexus/auth": "workspace:*",
+    "@exwave-nexus/auth-react": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": ">=16.0.0",
+    "react": ">=19.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "@types/react": "19.3.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "6.0.3"
+  }
+}

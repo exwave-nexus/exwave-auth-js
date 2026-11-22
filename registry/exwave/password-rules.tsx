@@ -1,6 +1,6 @@
 "use client";
 
-import type { PasswordCheck } from "@exwave-nexus/auth/react";
+import type { PasswordCheck } from "@exwave-nexus/auth-react";
 import { Check, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 

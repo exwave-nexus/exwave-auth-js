@@ -13,7 +13,10 @@ npm create exwave@latest my-app -- --template next --key exw_pk_…
 - `--key`: your platform's publishable key, from Nexus → Auth. Without one,
   the app uses `@exwave-nexus/auth-mock`, a local stand-in for Exwave Auth.
 
-Leave out what you don't know and it asks. The screens are shadcn components
-in `components/exwave/`: change them as you like.
+Leave out what you don't know and it asks. The screens are plain React
+components in `components/exwave/`, styled by one CSS file with Exwave's
+colors as variables: change them as you like. Using shadcn/ui instead? Add the
+same screens to your app from the registry:
+<https://www.exwave.net/docs/auth/components/>.
 
 Guide: https://www.exwave.net/docs/auth/get-started/

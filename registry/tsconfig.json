@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "paths": {
+      "@/components/exwave/*": ["./exwave/*"],
+      "@/components/ui/*": ["./ui/*"],
+      "@/lib/utils": ["./lib/utils.ts"],
+      "@/lib/exwave": ["./next/lib/exwave.ts"]
+    }
+  },
+  "include": ["exwave", "ui", "lib", "next"]
+}

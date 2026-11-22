@@ -39,17 +39,17 @@ jobs:
       - name: Build (packages and templates)
         # The templates' .env.development holds the mock's key.
         run: bun run build
-      - name: Registry
-        # The templates' components match registry/exwave, and the built
+      - name: Templates and registry
+        # The templates' copies match packages/create/shared, and the built
         # registry/public/r is up to date.
         run: |
-          bun run registry:check
+          bun run templates:check
           bun run registry:build
           git diff --exit-code -- registry/public
       - name: Core bundle size
         run: bun run size
       - name: Stage the packages
-        run: bun scripts/stage.ts packages/auth && bun scripts/stage.ts packages/auth-mock && bun scripts/stage.ts packages/create
+        run: for dir in packages/auth packages/auth-react packages/auth-nextjs packages/auth-mock packages/create; do bun scripts/stage.ts $dir; done
 
   smoke:
     # Slow and networked: on main only. Installs the staged tarballs into new

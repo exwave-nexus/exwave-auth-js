@@ -1,9 +1,10 @@
-import { ExwaveProvider } from "@exwave-nexus/auth/react";
+import "@fontsource-variable/nunito-sans";
+import "./index.css";
+import { ExwaveProvider } from "@exwave-nexus/auth-react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";
 import { navigate } from "./router";
-import "./index.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("index.html has no #root");

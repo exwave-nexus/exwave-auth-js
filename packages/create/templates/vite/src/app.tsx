@@ -1,43 +1,52 @@
 import type { ReactNode } from "react";
 import { AuthLink } from "@/components/exwave/auth-link";
+import { AuthPage } from "@/components/exwave/auth-page";
 import { ForgotPasswordForm } from "@/components/exwave/forgot-password-form";
 import { ResetPasswordForm } from "@/components/exwave/reset-password-form";
 import { SignInForm } from "@/components/exwave/sign-in-form";
 import { SignUpForm } from "@/components/exwave/sign-up-form";
-import { UserButton } from "@/components/exwave/user-button";
 import { VerifyEmail } from "@/components/exwave/verify-email";
 import { AccountPage } from "./pages/account";
 import { HomePage } from "./pages/home";
 import { usePath } from "./router";
 
-const auth = (form: ReactNode) => (
-  <div className="mx-auto w-full max-w-sm">{form}</div>
-);
-
 const ROUTES: Record<string, () => ReactNode> = {
   "/": () => <HomePage />,
   "/account": () => <AccountPage />,
-  "/sign-in": () => auth(<SignInForm />),
-  "/sign-up": () => auth(<SignUpForm />),
-  "/verify": () => auth(<VerifyEmail />),
-  "/forgot-password": () => auth(<ForgotPasswordForm />),
-  "/reset-password": () => auth(<ResetPasswordForm />),
+  "/sign-in": () => <SignInForm />,
+  "/sign-up": () => <SignUpForm />,
+  "/verify": () => <VerifyEmail />,
+  "/forgot-password": () => <ForgotPasswordForm />,
+  "/reset-password": () => <ResetPasswordForm />,
 };
+
+/** The auth screens get the auth frame: the logo above a centered card. */
+const AUTH = new Set([
+  "/sign-in",
+  "/sign-up",
+  "/verify",
+  "/forgot-password",
+  "/reset-password",
+]);
 
 export function App() {
   const path = usePath();
-  const page = ROUTES[path] ?? (() => <p>Page not found.</p>);
-  return (
-    <>
-      <header className="border-b">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-          <AuthLink href="/" className="font-semibold">
-            My app
-          </AuthLink>
-          <UserButton />
+  const page = ROUTES[path];
+  if (!page)
+    return (
+      <AuthPage>
+        <div className="auth">
+          <section className="card auth-card auth-card-centered">
+            <header className="auth-header">
+              <h1>Page not found</h1>
+              <p>There’s nothing at this address.</p>
+            </header>
+            <AuthLink href="/" className="button button-primary button-block">
+              Go home
+            </AuthLink>
+          </section>
         </div>
-      </header>
-      <main className="mx-auto w-full max-w-5xl px-4 py-10">{page()}</main>
-    </>
-  );
+      </AuthPage>
+    );
+  return AUTH.has(path) ? <AuthPage>{page()}</AuthPage> : page();
 }

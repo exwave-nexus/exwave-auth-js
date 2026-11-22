@@ -1,18 +1,17 @@
 "use client";
 
-import { useEmailLink, useExwave } from "@exwave-nexus/auth/react";
-import { type ComponentProps, useEffect } from "react";
+import { useEmailLink, useExwave } from "@exwave-nexus/auth-react";
+import { useEffect } from "react";
 import { AuthLink } from "@/components/exwave/auth-link";
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+  BrokenLinkIcon,
+  CheckCircleIcon,
+  MailIcon,
+  SpinnerIcon,
+} from "@/components/exwave/icons";
 
 /** The page verification emails link to: verifies, signs in, then moves on. */
-export function VerifyEmail({ className, ...props }: ComponentProps<"div">) {
+export function VerifyEmail() {
   const { navigate, paths } = useExwave();
   const link = useEmailLink();
 
@@ -21,38 +20,51 @@ export function VerifyEmail({ className, ...props }: ComponentProps<"div">) {
       navigate(paths.afterSignIn, { replace: true });
   }, [link.status, navigate, paths.afterSignIn]);
 
-  const [title, description] =
-    link.status === "error"
-      ? ["This link didn't work", link.message]
-      : link.status === "none"
-        ? [
-            "Verify your email",
-            "Open this page from the link in your verification email.",
-          ]
-        : link.status === "verified"
-          ? ["Email verified", "You're signed in."]
-          : ["Verifying your email…", "This only takes a moment."];
+  if (link.status === "error" || link.status === "none") {
+    const failed = link.status === "error";
+    return (
+      <div className="auth">
+        <section className="card auth-card auth-card-centered">
+          <span
+            className={failed ? "badge-icon badge-icon-error" : "badge-icon"}
+          >
+            {failed ? <BrokenLinkIcon size={28} /> : <MailIcon size={28} />}
+          </span>
+          <header className="auth-header">
+            <h1>{failed ? "This link doesn’t work" : "Verify your email"}</h1>
+            <p role={failed ? "alert" : undefined}>
+              {failed
+                ? link.message
+                : "Open this page from the link in your verification email."}
+            </p>
+          </header>
+          <AuthLink
+            href={paths.signIn}
+            className="button button-primary button-block"
+          >
+            Go to sign in
+          </AuthLink>
+        </section>
+      </div>
+    );
+  }
 
+  const verified = link.status === "verified";
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl" role="status">
-            {title}
-          </CardTitle>
-          <CardDescription>
-            {description}{" "}
-            {(link.status === "error" || link.status === "none") && (
-              <AuthLink
-                href={paths.signIn}
-                className="underline underline-offset-4"
-              >
-                Go to sign in
-              </AuthLink>
-            )}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+    <div className="auth">
+      <section className="card auth-card auth-card-centered">
+        <span className="badge-icon">
+          {verified ? <CheckCircleIcon size={28} /> : <SpinnerIcon size={28} />}
+        </span>
+        <div className="auth-header" role="status">
+          <h1>{verified ? "Email verified" : "Verifying your email"}</h1>
+          <p>
+            {verified
+              ? "You’re signed in."
+              : "One moment, then we’ll sign you in."}
+          </p>
+        </div>
+      </section>
     </div>
   );
 }

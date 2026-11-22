@@ -1,6 +1,6 @@
 "use client";
 
-import { useEmailLink, useExwave } from "@exwave-nexus/auth/react";
+import { useEmailLink, useExwave } from "@exwave-nexus/auth-react";
 import { type ComponentProps, useEffect } from "react";
 import { AuthLink } from "@/components/exwave/auth-link";
 import {
