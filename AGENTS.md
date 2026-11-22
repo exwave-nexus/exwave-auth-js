@@ -11,9 +11,14 @@ Bun workspaces:
   its `exwave-auth-mock` CLI.
 - `packages/create`: `create-exwave` (`npm create exwave`), and
   `templates/{next,vite}`: the apps it copies, which are also the dev
-  playgrounds and workspace members.
-- `registry/`: the shadcn registry. `registry/exwave/*` are the components;
-  `registry/public/r/*` is the built JSON the website serves.
+  playgrounds and workspace members. They use no UI library: plain React and
+  one stylesheet. `shared/` holds what both copy (the auth screens, the
+  stylesheet, the logo).
+- `registry/`: the shadcn registry, for apps that use shadcn/ui.
+  `registry/exwave/*` are the components, `registry/next/*` the pages and
+  wiring the auth-nextjs block adds, `registry/ui/*` shadcn's own primitives
+  (only to typecheck against: it's a private workspace), and
+  `registry/public/r/*` the built JSON the website serves.
 - `tests/`: the packages tested together (private, never published): the
   clients, the route handler, Next.js and React against the mock, through
   `@exwave-nexus/auth`'s public entry points.
@@ -36,9 +41,10 @@ min+gz and `./react` under 10 KB (`bun run size`, enforced by a test).
 - `bun run lint`, `bun run format` (Biome is the source of truth)
 - `bun run typecheck`, `bun test`, `bun run build` (packages and templates)
 - `bun run mock`, `bun run dev:next`, `bun run dev:vite`
-- `bun run registry:sync` after changing `registry/exwave/*` (copies the
-  components into the templates), `bun run registry:build` (rebuilds
-  `registry/public/r`), `bun run registry:check`
+- `bun run templates:sync` after changing `packages/create/shared/*` (copies
+  it into both templates), `bun run templates:check`
+- `bun run registry:build` after changing `registry/` (rebuilds
+  `registry/public/r`)
 - `bun run stage` (builds everything, then writes what a release publishes to
   each `packages/*/publish/`)
 - `bun run smoke` (slow, needs the network: npm-installs the staged tarballs
@@ -61,11 +67,12 @@ Each package builds with `scripts/build-lib.ts`. Its `forbid` lists keep
 React, Next.js and jose out of the entries that must not need them; the build
 fails when one leaks in.
 
-The registry's components are the product: keep their logic in the hooks
-(fixes reach people through npm) and the components to markup. Edit them in
-`registry/exwave/`, then `bun run registry:sync`. The Next.js template's
-pages, route handler, `lib/exwave.ts` and `proxy.ts` are also what the
-`auth-nextjs` block installs.
+The screens come twice: plain in `packages/create/shared/components/exwave/`
+(the templates; edit there, then `bun run templates:sync`) and as shadcn
+components in `registry/exwave/`. Keep their logic in the hooks (fixes reach
+people through npm) and the components to markup, and change both when the
+markup's behavior changes. The templates' screens may only use React and
+`@exwave-nexus/auth`, plus `@/lib/local-mock`, which each template provides.
 
 The player API contract lives in exwave-auth (v0.7.0,
 `/orbit/v1/platforms/:platformId/…`). When it changes, update the mock with

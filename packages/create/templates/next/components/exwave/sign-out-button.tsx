@@ -2,19 +2,20 @@
 
 import { useExwave, useSignOut } from "@exwave-nexus/auth/react";
 import type { ComponentProps } from "react";
-import { Button } from "@/components/ui/button";
 
 /** Signs out here, or on every device with `everywhere`, then goes to `paths.afterSignOut`. */
 export function SignOutButton({
   everywhere = false,
+  className = "button button-outline",
   children,
   ...props
-}: ComponentProps<typeof Button> & { everywhere?: boolean }) {
+}: ComponentProps<"button"> & { everywhere?: boolean }) {
   const { navigate, paths } = useExwave();
   const signOut = useSignOut();
   return (
-    <Button
-      variant="outline"
+    <button
+      type="button"
+      className={className}
       disabled={signOut.pending}
       title={signOut.message ?? undefined}
       onClick={async () => {
@@ -24,6 +25,6 @@ export function SignOutButton({
       {...props}
     >
       {children ?? (everywhere ? "Sign out everywhere" : "Sign out")}
-    </Button>
+    </button>
   );
 }

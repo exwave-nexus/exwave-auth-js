@@ -6,6 +6,7 @@
   "workspaces": [
     "packages/*",
     "packages/create/templates/*",
+    "registry",
     "tests"
   ],
   "scripts": {
@@ -21,8 +22,8 @@
     "check-versions": "bun scripts/check-versions.ts",
     "dev:vite": "bun run --cwd packages/create/templates/vite dev",
     "registry:build": "bun scripts/registry.ts build",
-    "registry:sync": "bun scripts/registry.ts sync",
-    "registry:check": "bun scripts/registry.ts check",
+    "templates:sync": "bun scripts/templates.ts sync",
+    "templates:check": "bun scripts/templates.ts check",
     "smoke": "bun scripts/smoke.ts"
   },
   "devDependencies": {

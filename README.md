@@ -222,8 +222,8 @@ The player access token API keeps its names.
 | --- | --- |
 | `packages/auth` | `@exwave-nexus/auth` |
 | `packages/auth-mock` | `@exwave-nexus/auth-mock` |
-| `packages/create` | `create-exwave`, and its `templates/` (also the dev playgrounds) |
-| `registry/` | The shadcn registry: the components, and the built JSON the website serves |
+| `packages/create` | `create-exwave`, its `templates/` (also the dev playgrounds), and `shared/`: the screens and styles both templates copy |
+| `registry/` | The shadcn registry: the components, the Next.js files the block adds, and the built JSON the website serves |
 | `tests/` | The packages tested together against the mock, through their public entry points |
 
 ```bash

@@ -1,7 +1,7 @@
 // Bundles the CLI for Node (no dependencies: @exwave-nexus/auth's key check
 // is bundled in), then copies the templates as git sees them, minus local env
 // files, into dist/templates.
-import { cp, mkdir } from "node:fs/promises";
+import { cp, mkdir, rm } from "node:fs/promises";
 import { buildLibrary } from "../../scripts/build-lib";
 
 const dir = new URL("./", import.meta.url);
@@ -28,10 +28,14 @@ const listed = Bun.spawnSync(
   { cwd: dir.pathname },
 );
 if (listed.exitCode !== 0) throw new Error("git ls-files templates failed");
-const files = listed.stdout
-  .toString()
-  .split("\n")
-  .filter((path) => path && !/(^|\/)\.env/.test(path));
+const files: string[] = [];
+for (const path of listed.stdout.toString().split("\n")) {
+  if (!path || /(^|\/)\.env/.test(path)) continue;
+  // Still in git's index, but deleted from the working tree.
+  if (!(await Bun.file(new URL(path, dir)).exists())) continue;
+  files.push(path);
+}
+await rm(new URL("dist/templates/", dir), { recursive: true, force: true });
 for (const path of files) {
   const to = new URL(`dist/${path}`, dir);
   await mkdir(new URL("./", to), { recursive: true });

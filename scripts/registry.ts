@@ -1,21 +1,14 @@
-// The shadcn registry: `registry/exwave/*` holds the components, the Next.js
-// template holds the pages and wiring the auth-nextjs block installs. This
-// writes registry/registry.json, builds registry/public/r/*.json with
-// `shadcn build`, and keeps the templates' copies of the components in step.
+// The shadcn registry: `registry/exwave/*` holds the components and
+// `registry/next/*` the pages and wiring the auth-nextjs block installs
+// (`registry/ui` is shadcn's own primitives, only there to typecheck them).
+// This writes registry/registry.json, then builds registry/public/r/*.json
+// with `shadcn build`.
 //
-//   bun scripts/registry.ts build   # registry.json, then public/r/
-//   bun scripts/registry.ts sync    # copy the components into the templates
-//   bun scripts/registry.ts check   # fail when a template's copy differs
-import { readdir } from "node:fs/promises";
+//   bun scripts/registry.ts build
 
 const repo = new URL("../", import.meta.url);
 const COMPONENTS = "registry/exwave/";
-const NEXT = "packages/create/templates/next/";
-/** Where each template keeps its copy of the components. */
-const COPIES = [
-  `${NEXT}components/exwave/`,
-  "packages/create/templates/vite/src/components/exwave/",
-];
+const NEXT = "registry/next/";
 
 const ui = (...names: string[]) => names;
 const PRIMITIVES = ui("button", "input", "label", "card");
@@ -202,26 +195,6 @@ export async function registryJson() {
   };
 }
 
-async function componentNames() {
-  return (await readdir(new URL(COMPONENTS, repo)))
-    .filter((file) => file.endsWith(".tsx"))
-    .sort();
-}
-
-async function sync(write: boolean): Promise<string[]> {
-  const stale: string[] = [];
-  for (const file of await componentNames()) {
-    const source = await Bun.file(new URL(`${COMPONENTS}${file}`, repo)).text();
-    for (const copy of COPIES) {
-      const target = Bun.file(new URL(`${copy}${file}`, repo));
-      if ((await target.exists()) && (await target.text()) === source) continue;
-      stale.push(`${copy}${file}`);
-      if (write) await Bun.write(target, source);
-    }
-  }
-  return stale;
-}
-
 if (import.meta.main) {
   const command = process.argv[2];
   if (command === "build") {
@@ -239,19 +212,8 @@ if (import.meta.main) {
       { cwd: repo.pathname, stdout: "inherit", stderr: "inherit" },
     );
     process.exit(shadcn.exitCode ?? 1);
-  } else if (command === "sync") {
-    for (const path of await sync(true)) console.log(`updated ${path}`);
-  } else if (command === "check") {
-    const stale = await sync(false);
-    if (stale.length) {
-      console.error(
-        `These copies differ from registry/exwave (run bun scripts/registry.ts sync):\n  ${stale.join("\n  ")}`,
-      );
-      process.exit(1);
-    }
-    console.log("The templates' components match registry/exwave.");
   } else {
-    console.error("usage: bun scripts/registry.ts build | sync | check");
+    console.error("usage: bun scripts/registry.ts build");
     process.exit(1);
   }
 }

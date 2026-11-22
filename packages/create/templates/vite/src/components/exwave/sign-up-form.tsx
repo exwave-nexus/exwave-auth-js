@@ -7,22 +7,14 @@ import {
   usePlatformConfig,
   useSignUp,
 } from "@exwave-nexus/auth/react";
-import { type ComponentProps, type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import { AuthLink } from "@/components/exwave/auth-link";
+import { MockEmailNote } from "@/components/exwave/backend-notice";
+import { AlertIcon, MailIcon } from "@/components/exwave/icons";
+import { PasswordInput } from "@/components/exwave/password-input";
 import { PasswordRules } from "@/components/exwave/password-rules";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 
-export function SignUpForm({ className, ...props }: ComponentProps<"div">) {
+export function SignUpForm() {
   const id = useId();
   const { paths, messages } = useExwave();
   const config = usePlatformConfig();
@@ -50,127 +42,124 @@ export function SignUpForm({ className, ...props }: ComponentProps<"div">) {
 
   if (config && !config.signUpEnabled)
     return (
-      <div className={cn("flex flex-col gap-6", className)} {...props}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Sign-up is closed</CardTitle>
-            <CardDescription>
-              New accounts are by invitation only. Already have one?{" "}
-              <AuthLink
-                href={paths.signIn}
-                className="underline underline-offset-4"
-              >
-                Sign in
-              </AuthLink>
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="auth">
+        <section className="card auth-card">
+          <header className="auth-header">
+            <h1>Sign-up is closed</h1>
+            <p>New accounts are by invitation only.</p>
+          </header>
+        </section>
+        <p className="auth-footer">
+          Already have an account?{" "}
+          <AuthLink href={paths.signIn}>Sign in</AuthLink>
+        </p>
       </div>
     );
 
   if (step === "check_email")
     return (
-      <div className={cn("flex flex-col gap-6", className)} {...props}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Check your email</CardTitle>
-            <CardDescription>
+      <div className="auth">
+        <section className="card auth-card auth-card-centered">
+          <span className="badge-icon">
+            <MailIcon size={28} />
+          </span>
+          <header className="auth-header">
+            <h1>Check your email</h1>
+            <p>
               We sent a link to <strong>{email}</strong>. Open it to verify your
               email and sign in.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {resend.message && (
-              <p role="alert" className="text-sm text-destructive">
-                {resend.message}
-              </p>
-            )}
-            <Button
-              variant="outline"
+            </p>
+          </header>
+          {resend.message && (
+            <p role="alert" className="notice notice-error">
+              <AlertIcon />
+              <span>{resend.message}</span>
+            </p>
+          )}
+          <div className="auth-actions">
+            <button
+              type="button"
+              className="button button-outline"
               disabled={resend.pending || resend.sent}
               onClick={() => resend.run()}
             >
               {resend.sent ? "We sent a new link" : "Send the link again"}
-            </Button>
-            <Button variant="ghost" onClick={back}>
+            </button>
+            <button
+              type="button"
+              className="button button-ghost"
+              onClick={back}
+            >
               Use a different email
-            </Button>
-          </CardContent>
-        </Card>
+            </button>
+          </div>
+          <MockEmailNote />
+        </section>
       </div>
     );
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Create an account</CardTitle>
-          <CardDescription>
-            We&apos;ll email you a link to verify it.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} aria-busy={signUp.pending}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor={`${id}-name`}>Name</Label>
-                <Input
-                  id={`${id}-name`}
-                  name="displayName"
-                  autoComplete="name"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor={`${id}-email`}>Email</Label>
-                <Input
-                  id={`${id}-email`}
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor={`${id}-password`}>Password</Label>
-                <Input
-                  id={`${id}-password`}
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  aria-invalid={error ? true : undefined}
-                  aria-describedby={`${id}-rules`}
-                  required
-                />
-                <PasswordRules id={`${id}-rules`} check={check} />
-              </div>
-              {error && (
-                <p role="alert" className="text-sm text-destructive">
-                  {error}
-                </p>
-              )}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={signUp.pending}
-              >
-                {signUp.pending ? "Creating your account…" : "Sign up"}
-              </Button>
-            </div>
-            <p className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <AuthLink
-                href={paths.signIn}
-                className="underline underline-offset-4"
-              >
-                Sign in
-              </AuthLink>
+    <div className="auth">
+      <section className="card auth-card">
+        <header className="auth-header">
+          <h1>Create an account</h1>
+          <p>We’ll email you a link to verify it.</p>
+        </header>
+        <form className="form" onSubmit={onSubmit} aria-busy={signUp.pending}>
+          <div className="field">
+            <label htmlFor={`${id}-name`}>Name</label>
+            <input
+              id={`${id}-name`}
+              className="input"
+              name="displayName"
+              autoComplete="name"
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor={`${id}-email`}>Email</label>
+            <input
+              id={`${id}-email`}
+              className="input"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor={`${id}-password`}>Password</label>
+            <PasswordInput
+              id={`${id}-password`}
+              name="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={`${id}-rules`}
+              required
+            />
+            <PasswordRules id={`${id}-rules`} check={check} />
+          </div>
+          {error && (
+            <p role="alert" className="notice notice-error">
+              <AlertIcon />
+              <span>{error}</span>
             </p>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+          <button
+            type="submit"
+            className="button button-primary"
+            disabled={signUp.pending}
+          >
+            {signUp.pending ? "Creating your account…" : "Create account"}
+          </button>
+        </form>
+      </section>
+      <p className="auth-footer">
+        Already have an account?{" "}
+        <AuthLink href={paths.signIn}>Sign in</AuthLink>
+      </p>
     </div>
   );
 }

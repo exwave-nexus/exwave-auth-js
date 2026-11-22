@@ -251,47 +251,47 @@
           "target": "@components/exwave/user-button.tsx"
         },
         {
-          "path": "packages/create/templates/next/app/(auth)/sign-in/page.tsx",
+          "path": "registry/next/app/(auth)/sign-in/page.tsx",
           "type": "registry:page",
           "target": "app/(auth)/sign-in/page.tsx"
         },
         {
-          "path": "packages/create/templates/next/app/(auth)/sign-up/page.tsx",
+          "path": "registry/next/app/(auth)/sign-up/page.tsx",
           "type": "registry:page",
           "target": "app/(auth)/sign-up/page.tsx"
         },
         {
-          "path": "packages/create/templates/next/app/(auth)/verify/page.tsx",
+          "path": "registry/next/app/(auth)/verify/page.tsx",
           "type": "registry:page",
           "target": "app/(auth)/verify/page.tsx"
         },
         {
-          "path": "packages/create/templates/next/app/(auth)/forgot-password/page.tsx",
+          "path": "registry/next/app/(auth)/forgot-password/page.tsx",
           "type": "registry:page",
           "target": "app/(auth)/forgot-password/page.tsx"
         },
         {
-          "path": "packages/create/templates/next/app/(auth)/reset-password/page.tsx",
+          "path": "registry/next/app/(auth)/reset-password/page.tsx",
           "type": "registry:page",
           "target": "app/(auth)/reset-password/page.tsx"
         },
         {
-          "path": "packages/create/templates/next/app/(auth)/layout.tsx",
+          "path": "registry/next/app/(auth)/layout.tsx",
           "type": "registry:page",
           "target": "app/(auth)/layout.tsx"
         },
         {
-          "path": "packages/create/templates/next/app/api/exwave/[...action]/route.ts",
+          "path": "registry/next/app/api/exwave/[...action]/route.ts",
           "type": "registry:file",
           "target": "app/api/exwave/[...action]/route.ts"
         },
         {
-          "path": "packages/create/templates/next/lib/exwave.ts",
+          "path": "registry/next/lib/exwave.ts",
           "type": "registry:lib",
           "target": "@lib/exwave.ts"
         },
         {
-          "path": "packages/create/templates/next/proxy.ts",
+          "path": "registry/next/proxy.ts",
           "type": "registry:file",
           "target": "~/proxy.ts"
         }

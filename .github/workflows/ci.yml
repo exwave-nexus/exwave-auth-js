@@ -39,11 +39,11 @@ jobs:
       - name: Build (packages and templates)
         # The templates' .env.development holds the mock's key.
         run: bun run build
-      - name: Registry
-        # The templates' components match registry/exwave, and the built
+      - name: Templates and registry
+        # The templates' copies match packages/create/shared, and the built
         # registry/public/r is up to date.
         run: |
-          bun run registry:check
+          bun run templates:check
           bun run registry:build
           git diff --exit-code -- registry/public
       - name: Core bundle size
