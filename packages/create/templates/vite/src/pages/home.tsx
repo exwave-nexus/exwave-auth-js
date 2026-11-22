@@ -1,4 +1,4 @@
-import { useExwave } from "@exwave-nexus/auth/react";
+import { useExwave } from "@exwave-nexus/auth-react";
 import { AuthLink } from "@/components/exwave/auth-link";
 import { Avatar } from "@/components/exwave/avatar";
 import { BackendNotice } from "@/components/exwave/backend-notice";

@@ -2,7 +2,7 @@
 
 // Development help: which Exwave Auth this app talks to. Delete this file,
 // and its two uses, once your app runs on your platform.
-import { useExwave } from "@exwave-nexus/auth/react";
+import { useExwave } from "@exwave-nexus/auth-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {

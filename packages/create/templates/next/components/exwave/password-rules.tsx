@@ -1,6 +1,6 @@
 "use client";
 
-import type { PasswordCheck } from "@exwave-nexus/auth/react";
+import type { PasswordCheck } from "@exwave-nexus/auth-react";
 import { RuleMetIcon, RuleOpenIcon } from "@/components/exwave/icons";
 
 /** The platform's password rules, ticked off as the password is typed. */

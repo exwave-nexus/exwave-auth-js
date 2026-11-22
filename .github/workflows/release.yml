@@ -54,7 +54,8 @@ jobs:
         # config can't send @exwave-nexus/* elsewhere.
         run: |
           npmjs="--registry=https://registry.npmjs.org/ --@exwave-nexus:registry=https://registry.npmjs.org/"
-          for dir in packages/auth packages/auth-mock packages/create; do
+          # Dependencies first: each package can install the ones before it.
+          for dir in packages/auth packages/auth-react packages/auth-nextjs packages/auth-mock packages/create; do
             name=$(jq -r .name "$dir/publish/package.json")
             version=$(jq -r .version "$dir/publish/package.json")
             if npm view "$name@$version" version $npmjs >/dev/null 2>&1; then

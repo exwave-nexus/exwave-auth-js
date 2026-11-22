@@ -1,6 +1,15 @@
-import { cookies, headers } from "next/headers";
-import { type NextRequest, NextResponse } from "next/server";
-import { REFRESH_MARGIN_MS, type SignOutReason } from "../client";
+import type {
+  AuthState,
+  CodeInput,
+  EmailInput,
+  PasswordResetConfirmInput,
+  PlatformConfig,
+  SignInInput,
+  SignUpInput,
+  SignUpResult,
+  User,
+} from "@exwave-nexus/auth";
+import { REFRESH_MARGIN_MS, type SignOutReason } from "@exwave-nexus/auth";
 import {
   COOKIE_MAX_AGE_SECONDS,
   createExwaveServerAuth,
@@ -12,21 +21,12 @@ import {
   type RefreshResult,
   type ServerSession,
   SIGN_OUT_REASON_MAX_AGE_SECONDS,
-} from "../server";
-import type {
-  AuthState,
-  CodeInput,
-  EmailInput,
-  PasswordResetConfirmInput,
-  PlatformConfig,
-  SignInInput,
-  SignUpInput,
-  SignUpResult,
-  User,
-} from "../types";
+} from "@exwave-nexus/auth/server";
+import { cookies, headers } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
-export type { SignOutReason } from "../client";
-export { ExwaveAuthError, isExwaveAuthError } from "../errors";
+export type { SignOutReason } from "@exwave-nexus/auth";
+export { ExwaveAuthError, isExwaveAuthError } from "@exwave-nexus/auth";
 
 export interface ExwaveNextOptions extends Partial<ExwaveServerAuthOptions> {
   /** Pages the email links land on, relative to the app. */
@@ -152,7 +152,7 @@ export function createExwaveNext(options: ExwaveNextOptions = {}) {
 
     /**
      * The session as the browser may see it, for `<ExwaveProvider
-     * initialState>` from `@exwave-nexus/auth/next/client`: the user, the
+     * initialState>` from `@exwave-nexus/auth-nextjs/client`: the user, the
      * PAT's expiry and why the last session ended. No tokens, and no refresh,
      * so it is safe in Server Components.
      */

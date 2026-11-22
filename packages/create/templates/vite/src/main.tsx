@@ -1,6 +1,6 @@
 import "@fontsource-variable/nunito-sans";
 import "./index.css";
-import { ExwaveProvider } from "@exwave-nexus/auth/react";
+import { ExwaveProvider } from "@exwave-nexus/auth-react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app";

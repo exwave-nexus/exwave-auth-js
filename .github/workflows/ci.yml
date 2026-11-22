@@ -49,7 +49,7 @@ jobs:
       - name: Core bundle size
         run: bun run size
       - name: Stage the packages
-        run: bun scripts/stage.ts packages/auth && bun scripts/stage.ts packages/auth-mock && bun scripts/stage.ts packages/create
+        run: for dir in packages/auth packages/auth-react packages/auth-nextjs packages/auth-mock packages/create; do bun scripts/stage.ts $dir; done
 
   smoke:
     # Slow and networked: on main only. Installs the staged tarballs into new

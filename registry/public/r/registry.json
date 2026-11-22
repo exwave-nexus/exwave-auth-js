@@ -9,7 +9,8 @@
       "title": "Sign in form",
       "description": "Email or username and password, with the reason the last session ended and a new verification link when needed.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0"
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0"
       ],
       "registryDependencies": [
         "button",
@@ -36,7 +37,8 @@
       "title": "Sign up form",
       "description": "Name, email and password with the platform's rules ticked off as you type, then a check-your-email step with resend.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0",
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -69,7 +71,8 @@
       "title": "Verify email",
       "description": "The page verification emails link to: verifies the email, signs in and moves on.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0"
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0"
       ],
       "registryDependencies": [
         "card"
@@ -93,7 +96,8 @@
       "title": "Forgot password form",
       "description": "Sends a link to choose a new password.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0"
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0"
       ],
       "registryDependencies": [
         "button",
@@ -120,7 +124,8 @@
       "title": "Reset password form",
       "description": "The page password reset emails link to: choose a new password, then sign in.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0",
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -153,7 +158,8 @@
       "title": "Sign out button",
       "description": "Signs out here, or on every device.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0"
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0"
       ],
       "registryDependencies": [
         "button"
@@ -172,7 +178,8 @@
       "title": "User button",
       "description": "A Sign in button when signed out; an avatar menu with the account and sign-out when signed in.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0"
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0"
       ],
       "registryDependencies": [
         "button",
@@ -193,7 +200,9 @@
       "title": "Exwave Auth for Next.js",
       "description": "Sign-in, sign-up, email verification and password reset pages for the App Router, with the /api/exwave routes, the session proxy and every component.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0",
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0",
+        "@exwave-nexus/auth-nextjs@^0.3.0",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -300,7 +309,7 @@
         "NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY": "exw_pk_from_nexus",
         "EXWAVE_COOKIE_SECRET": ""
       },
-      "docs": "Set NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) and EXWAVE_COOKIE_SECRET (openssl rand -base64 32) in .env.local, then wrap app/layout.tsx's body in <ExwaveProvider initialState={await exwave.getAuthState()}> from @exwave-nexus/auth/next/client. Guide: https://www.exwave.net/docs/auth/get-started/"
+      "docs": "Set NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) and EXWAVE_COOKIE_SECRET (openssl rand -base64 32) in .env.local, then wrap app/layout.tsx's body in <ExwaveProvider initialState={await exwave.getAuthState()}> from @exwave-nexus/auth-nextjs/client. Guide: https://www.exwave.net/docs/auth/get-started/"
     },
     {
       "name": "auth-react",
@@ -308,7 +317,8 @@
       "title": "Exwave Auth for React (Vite)",
       "description": "Every sign-in, sign-up, email verification and password reset component, for a React app that talks to Exwave Auth from the browser.",
       "dependencies": [
-        "@exwave-nexus/auth@^0.2.0",
+        "@exwave-nexus/auth@^0.3.0",
+        "@exwave-nexus/auth-react@^0.3.0",
         "lucide-react"
       ],
       "registryDependencies": [
@@ -369,7 +379,7 @@
       "envVars": {
         "VITE_EXWAVE_PUBLISHABLE_KEY": "exw_pk_from_nexus"
       },
-      "docs": "Set VITE_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) in .env.local, then wrap your app in <ExwaveProvider publishableKey={import.meta.env.VITE_EXWAVE_PUBLISHABLE_KEY} navigate={yourRouterNavigate}> from @exwave-nexus/auth/react, and give each form a route. Guide: https://www.exwave.net/docs/auth/get-started/"
+      "docs": "Set VITE_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) in .env.local, then wrap your app in <ExwaveProvider publishableKey={import.meta.env.VITE_EXWAVE_PUBLISHABLE_KEY} navigate={yourRouterNavigate}> from @exwave-nexus/auth-react, and give each form a route. Guide: https://www.exwave.net/docs/auth/get-started/"
     }
   ]
 }

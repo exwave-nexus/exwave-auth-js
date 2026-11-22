@@ -1,6 +1,6 @@
 import "@fontsource-variable/nunito-sans";
 import "./globals.css";
-import { ExwaveProvider } from "@exwave-nexus/auth/next/client";
+import { ExwaveProvider } from "@exwave-nexus/auth-nextjs/client";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { exwave } from "@/lib/exwave";

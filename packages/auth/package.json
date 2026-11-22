@@ -1,9 +1,9 @@
 {
   "name": "@exwave-nexus/auth",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "Exwave managed auth for websites and apps: browser, Bun, Node, Next.js and React.",
+  "description": "Exwave Auth for websites and apps: the browser and route clients, messages and the server side, for any framework or none.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -14,10 +14,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./messages": "./src/messages.ts",
-    "./react": "./src/react/index.tsx",
-    "./server": "./src/server/index.ts",
-    "./next": "./src/next/index.ts",
-    "./next/client": "./src/next/client.tsx"
+    "./server": "./src/server/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
@@ -27,24 +24,8 @@
   "dependencies": {
     "jose": "6.2.17"
   },
-  "peerDependencies": {
-    "next": ">=16.0.0",
-    "react": ">=19.0.0"
-  },
-  "peerDependenciesMeta": {
-    "next": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@types/bun": "1.4.4",
-    "@types/react": "19.3.0",
-    "next": "16.4.6",
-    "react": "19.3.1",
-    "react-dom": "19.3.1",
     "typescript": "6.0.3"
   }
 }

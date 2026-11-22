@@ -1,4 +1,4 @@
-import { useExwave } from "@exwave-nexus/auth/react";
+import { useExwave } from "@exwave-nexus/auth-react";
 import { useEffect } from "react";
 import { AuthLink } from "@/components/exwave/auth-link";
 import { ArrowLeftIcon } from "@/components/exwave/icons";

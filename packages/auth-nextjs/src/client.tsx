@@ -1,11 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import type { AuthState } from "@exwave-nexus/auth";
 import {
   type ExwaveProviderSettings,
   ExwaveProvider as Provider,
-} from "../react";
-import type { AuthState } from "../types";
+} from "@exwave-nexus/auth-react";
+import { useRouter } from "next/navigation";
 
 export interface ExwaveNextProviderProps
   extends Omit<ExwaveProviderSettings, "navigate" | "onAuthChange"> {

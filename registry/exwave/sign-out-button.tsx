@@ -1,6 +1,6 @@
 "use client";
 
-import { useExwave, useSignOut } from "@exwave-nexus/auth/react";
+import { useExwave, useSignOut } from "@exwave-nexus/auth-react";
 import type { ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
 

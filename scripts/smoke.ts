@@ -76,7 +76,13 @@ async function pack(): Promise<Record<string, string>> {
   const out = join(work, "tgz");
   await mkdir(out);
   const tarballs: Record<string, string> = {};
-  for (const name of ["auth", "auth-mock", "create"]) {
+  for (const name of [
+    "auth",
+    "auth-react",
+    "auth-nextjs",
+    "auth-mock",
+    "create",
+  ]) {
     const dir = join(repo, "packages", name, "publish");
     const manifest = JSON.parse(
       await readFile(join(dir, "package.json"), "utf8"),
@@ -207,11 +213,11 @@ async function registry(tarballs: Record<string, string>) {
   const block = JSON.parse(
     await readFile(join(repo, "registry/public/r/auth-nextjs.json"), "utf8"),
   );
-  block.dependencies = block.dependencies.map((dep: string) =>
-    dep.startsWith("@exwave-nexus/auth@")
-      ? `@exwave-nexus/auth@file:${tarballs["@exwave-nexus/auth"]}`
-      : dep,
-  );
+  // Our packages from the tarballs, as the release would publish them.
+  block.dependencies = block.dependencies.map((dep: string) => {
+    const name = dep.slice(0, dep.lastIndexOf("@"));
+    return tarballs[name] ? `${name}@file:${tarballs[name]}` : dep;
+  });
   const local = join(work, "auth-nextjs.json");
   await writeFile(local, JSON.stringify(block));
   run(
@@ -240,7 +246,7 @@ async function registry(tarballs: Record<string, string>) {
   const layout = await readFile(layoutPath, "utf8");
   await writeFile(
     layoutPath,
-    `import { ExwaveProvider } from "@exwave-nexus/auth/next/client";\nimport { exwave } from "@/lib/exwave";\n${layout
+    `import { ExwaveProvider } from "@exwave-nexus/auth-nextjs/client";\nimport { exwave } from "@/lib/exwave";\n${layout
       .replace(
         "export default function RootLayout",
         "export default async function RootLayout",

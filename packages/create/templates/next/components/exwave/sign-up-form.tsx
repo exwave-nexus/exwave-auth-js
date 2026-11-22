@@ -6,7 +6,7 @@ import {
   usePasswordCheck,
   usePlatformConfig,
   useSignUp,
-} from "@exwave-nexus/auth/react";
+} from "@exwave-nexus/auth-react";
 import { type FormEvent, useId, useState } from "react";
 import { AuthLink } from "@/components/exwave/auth-link";
 import { MockEmailNote } from "@/components/exwave/backend-notice";

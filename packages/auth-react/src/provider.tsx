@@ -1,3 +1,14 @@
+import type { AuthState, Session, User } from "@exwave-nexus/auth";
+import {
+  type AuthChangeEvent,
+  createExwaveAuth,
+  createExwaveRouteClient,
+  type ExwaveAuth,
+  type ExwaveAuthOptions,
+  type ExwaveRouteClient,
+  type SignOutReason,
+} from "@exwave-nexus/auth";
+import type { Messages } from "@exwave-nexus/auth/messages";
 import {
   createContext,
   type ReactNode,
@@ -7,19 +18,6 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  type AuthChangeEvent,
-  createExwaveAuth,
-  type ExwaveAuth,
-  type ExwaveAuthOptions,
-  type SignOutReason,
-} from "../client";
-import type { Messages } from "../messages";
-import {
-  createExwaveRouteClient,
-  type ExwaveRouteClient,
-} from "../route-client";
-import type { AuthState, Session, User } from "../types";
 
 /** Where the auth pages live, and where to go after signing in and out. */
 export interface ExwavePaths {
@@ -197,7 +195,7 @@ export function useExwave(): ExwaveContextValue {
   const value = useContext(ExwaveContext);
   if (!value)
     throw new Error(
-      "useExwave() must be used inside <ExwaveProvider>: wrap your app in it (in Next.js, app/layout.tsx with @exwave-nexus/auth/next/client). See https://www.exwave.net/docs/auth/get-started/",
+      "useExwave() must be used inside <ExwaveProvider>: wrap your app in it (in Next.js, app/layout.tsx with @exwave-nexus/auth-nextjs/client). See https://www.exwave.net/docs/auth/get-started/",
     );
   return value;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@exwave-nexus/auth-mock",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "An in-memory Exwave Auth API for local development and tests. Not for production.",

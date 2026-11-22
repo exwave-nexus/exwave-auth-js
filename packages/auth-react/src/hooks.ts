@@ -1,14 +1,7 @@
 // Headless hooks: the state and calls behind sign-in, sign-up, email links,
 // password reset and sign-out, for your own markup. They work the same with
 // the browser client and the route client.
-import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  type EmailLinkParams,
-  parseEmailLink,
-  withoutEmailLink,
-} from "../email-link";
-import { describeError, describeRule } from "../messages";
-import { checkPassword, type PasswordRule, passwordRules } from "../password";
+
 import type {
   CodeInput,
   PasswordPolicy,
@@ -17,7 +10,17 @@ import type {
   SignInInput,
   SignUpInput,
   SignUpResult,
-} from "../types";
+} from "@exwave-nexus/auth";
+import {
+  checkPassword,
+  type EmailLinkParams,
+  type PasswordRule,
+  parseEmailLink,
+  passwordRules,
+  withoutEmailLink,
+} from "@exwave-nexus/auth";
+import { describeError, describeRule } from "@exwave-nexus/auth/messages";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useExwave } from "./provider";
 
 /** One call's state. `run` never throws: read `error` or `message` instead. */
@@ -91,7 +94,7 @@ function warnAboutOrigin(config: PlatformConfig) {
   if (config.allowedRedirectOrigins.includes(origin)) return;
   warnedOrigin = origin;
   console.warn(
-    `@exwave-nexus/auth: ${origin} isn't a Site URL or Redirect URL of this platform, so email links can't land here. Add it in Nexus → Auth → Settings → Redirect URLs.`,
+    `@exwave-nexus/auth-react: ${origin} isn't a Site URL or Redirect URL of this platform, so email links can't land here. Add it in Nexus → Auth → Settings → Redirect URLs.`,
   );
 }
 

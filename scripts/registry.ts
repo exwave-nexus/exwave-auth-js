@@ -109,8 +109,9 @@ function filesFor(names: string[]): RegistryFile[] {
   return [...all].map(componentFile);
 }
 
-function npmFor(names: string[], auth: string): string[] {
-  const deps = new Set([auth]);
+/** The npm packages the components need: ours (`exwave`), then the helpers'. */
+function npmFor(names: string[], exwave: string[]): string[] {
+  const deps = new Set(exwave);
   for (const name of names)
     for (const used of [name, ...(ITEMS[name]?.uses ?? [])])
       for (const dep of HELPERS[used]?.npm ?? ITEMS[used]?.npm ?? [])
@@ -123,7 +124,10 @@ function uiFor(names: string[]): string[] {
 }
 
 export async function registryJson() {
-  const auth = `@exwave-nexus/auth@^${await authVersion()}`;
+  const version = await authVersion();
+  const exwave = (name: string) => `@exwave-nexus/${name}@^${version}`;
+  // The components import @exwave-nexus/auth/messages and the React hooks.
+  const auth = [exwave("auth"), exwave("auth-react")];
   const everything = Object.keys(ITEMS);
   const items: object[] = Object.entries(ITEMS).map(([name, item]) => ({
     name,
@@ -141,7 +145,7 @@ export async function registryJson() {
     title: "Exwave Auth for Next.js",
     description:
       "Sign-in, sign-up, email verification and password reset pages for the App Router, with the /api/exwave routes, the session proxy and every component.",
-    dependencies: npmFor(everything, auth),
+    dependencies: npmFor(everything, [...auth, exwave("auth-nextjs")]),
     registryDependencies: uiFor(everything),
     files: [
       ...filesFor(everything),
@@ -171,7 +175,7 @@ export async function registryJson() {
       NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY: "exw_pk_from_nexus",
       EXWAVE_COOKIE_SECRET: "",
     },
-    docs: "Set NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) and EXWAVE_COOKIE_SECRET (openssl rand -base64 32) in .env.local, then wrap app/layout.tsx's body in <ExwaveProvider initialState={await exwave.getAuthState()}> from @exwave-nexus/auth/next/client. Guide: https://www.exwave.net/docs/auth/get-started/",
+    docs: "Set NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) and EXWAVE_COOKIE_SECRET (openssl rand -base64 32) in .env.local, then wrap app/layout.tsx's body in <ExwaveProvider initialState={await exwave.getAuthState()}> from @exwave-nexus/auth-nextjs/client. Guide: https://www.exwave.net/docs/auth/get-started/",
   });
 
   items.push({
@@ -184,7 +188,7 @@ export async function registryJson() {
     registryDependencies: uiFor(everything),
     files: filesFor(everything),
     envVars: { VITE_EXWAVE_PUBLISHABLE_KEY: "exw_pk_from_nexus" },
-    docs: "Set VITE_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) in .env.local, then wrap your app in <ExwaveProvider publishableKey={import.meta.env.VITE_EXWAVE_PUBLISHABLE_KEY} navigate={yourRouterNavigate}> from @exwave-nexus/auth/react, and give each form a route. Guide: https://www.exwave.net/docs/auth/get-started/",
+    docs: "Set VITE_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) in .env.local, then wrap your app in <ExwaveProvider publishableKey={import.meta.env.VITE_EXWAVE_PUBLISHABLE_KEY} navigate={yourRouterNavigate}> from @exwave-nexus/auth-react, and give each form a route. Guide: https://www.exwave.net/docs/auth/get-started/",
   });
 
   return {

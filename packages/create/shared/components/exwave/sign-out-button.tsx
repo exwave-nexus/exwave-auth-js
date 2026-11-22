@@ -1,6 +1,6 @@
 "use client";
 
-import { useExwave, useSignOut } from "@exwave-nexus/auth/react";
+import { useExwave, useSignOut } from "@exwave-nexus/auth-react";
 import type { ComponentProps } from "react";
 
 /** Signs out here, or on every device with `everywhere`, then goes to `paths.afterSignOut`. */

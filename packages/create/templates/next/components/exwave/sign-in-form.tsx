@@ -5,7 +5,7 @@ import {
   useExwave,
   useResendVerification,
   useSignIn,
-} from "@exwave-nexus/auth/react";
+} from "@exwave-nexus/auth-react";
 import { type FormEvent, useId } from "react";
 import { AuthLink, redirectTarget } from "@/components/exwave/auth-link";
 import {

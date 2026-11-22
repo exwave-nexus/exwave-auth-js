@@ -1,0 +1,40 @@
+{
+  "name": "@exwave-nexus/auth-react",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Exwave Auth for React: the provider, and hooks for sign-in, sign-up, email links, password reset and sign-out.",
+  "keywords": [
+    "exwave",
+    "auth",
+    "react",
+    "hooks"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/exwave-nexus/exwave-auth-js.git",
+    "directory": "packages/auth-react"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "bun build.ts",
+    "stage": "bun build.ts && bun ../../scripts/stage.ts ."
+  },
+  "dependencies": {
+    "@exwave-nexus/auth": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "@types/react": "19.3.0",
+    "react": "19.3.1",
+    "typescript": "6.0.3"
+  }
+}

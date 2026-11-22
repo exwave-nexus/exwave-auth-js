@@ -1,6 +1,6 @@
 "use client";
 
-import { useExwave } from "@exwave-nexus/auth/react";
+import { useExwave } from "@exwave-nexus/auth-react";
 import type { ComponentProps, MouseEvent } from "react";
 
 /** A link between auth pages that moves the way your app does (the provider's `navigate`). */
