@@ -14,9 +14,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# GitHub's hosted runners: the repository is public, and the exwave-root
+# runners on Root never take public repositories' jobs (privileged Docker).
 jobs:
   check:
-    runs-on: exwave-root
+    runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
