@@ -4,8 +4,8 @@
   "title": "Exwave Auth for React (Vite)",
   "description": "Every sign-in, sign-up, email verification and password reset component, for a React app that talks to Exwave Auth from the browser.",
   "dependencies": [
-    "@exwave-nexus/auth@^0.3.0",
-    "@exwave-nexus/auth-react@^0.3.0",
+    "@exwave-nexus/auth@^0.3.1",
+    "@exwave-nexus/auth-react@^0.3.1",
     "lucide-react"
   ],
   "registryDependencies": [

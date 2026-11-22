@@ -4,8 +4,8 @@
   "title": "Verify email",
   "description": "The page verification emails link to: verifies the email, signs in and moves on.",
   "dependencies": [
-    "@exwave-nexus/auth@^0.3.0",
-    "@exwave-nexus/auth-react@^0.3.0"
+    "@exwave-nexus/auth@^0.3.1",
+    "@exwave-nexus/auth-react@^0.3.1"
   ],
   "registryDependencies": [
     "card"

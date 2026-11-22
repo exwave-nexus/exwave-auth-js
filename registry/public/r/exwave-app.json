@@ -4,9 +4,9 @@
   "title": "Exwave Auth app for Next.js",
   "description": "A whole Next.js app with Exwave Auth on shadcn/ui, in Exwave's colors: the home page, every auth screen, the account page, the /api/exwave routes and the session proxy.",
   "dependencies": [
-    "@exwave-nexus/auth@^0.3.0",
-    "@exwave-nexus/auth-react@^0.3.0",
-    "@exwave-nexus/auth-nextjs@^0.3.0",
+    "@exwave-nexus/auth@^0.3.1",
+    "@exwave-nexus/auth-react@^0.3.1",
+    "@exwave-nexus/auth-nextjs@^0.3.1",
     "lucide-react",
     "@fontsource-variable/nunito-sans",
     "next-themes"
