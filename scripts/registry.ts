@@ -1,14 +1,18 @@
-// The shadcn registry: `registry/exwave/*` holds the components and
-// `registry/next/*` the pages and wiring the auth-nextjs block installs
-// (`registry/ui` is shadcn's own primitives, only there to typecheck them).
-// This writes registry/registry.json, then builds registry/public/r/*.json
-// with `shadcn build`.
+// The shadcn registry: `registry/exwave/*` holds the components,
+// `registry/next/*` the pages and wiring the auth-nextjs block installs, and
+// `registry/next-app/*` the rest of the full app (exwave-app), whose
+// app/globals.css also holds the Exwave theme (`registry/ui` is shadcn's own
+// primitives, only there to typecheck against). This writes
+// registry/registry.json, then builds registry/public/r/*.json with
+// `shadcn build`.
 //
 //   bun scripts/registry.ts build
 
 const repo = new URL("../", import.meta.url);
 const COMPONENTS = "registry/exwave/";
 const NEXT = "registry/next/";
+const APP = "registry/next-app/";
+const LOGO = "packages/create/shared/exwave.svg";
 
 const ui = (...names: string[]) => names;
 const PRIMITIVES = ui("button", "input", "label", "card");
@@ -123,6 +127,39 @@ function uiFor(names: string[]): string[] {
   return [...new Set(names.flatMap((name) => ITEMS[name]?.ui ?? []))];
 }
 
+type CssVars = Record<string, string>;
+
+/** The `--name: value;` declarations of one block of the app's globals.css. */
+function declarations(css: string, selector: string): CssVars {
+  const start = css.indexOf(`${selector} {`);
+  if (start < 0) throw new Error(`${APP}app/globals.css has no ${selector}`);
+  const body = css.slice(start, css.indexOf("\n}", start));
+  return Object.fromEntries(
+    [...body.matchAll(/^\s*--([\w-]+):\s*(.+?);$/gm)].map(([, k, v]) => [
+      k as string,
+      (v as string).replace(/\s+/g, " "),
+    ]),
+  );
+}
+
+/** Exwave's theme as shadcn cssVars, read from the app's globals.css. */
+async function exwaveTheme() {
+  const css = await Bun.file(new URL(`${APP}app/globals.css`, repo)).text();
+  const inline = declarations(css, "@theme inline");
+  // Only what Exwave adds to shadcn's own @theme inline: the font and the
+  // success and warning colors.
+  const theme = Object.fromEntries(
+    Object.entries(inline).filter(
+      ([name]) => name === "font-sans" || /^color-(success|warning)/.test(name),
+    ),
+  );
+  return {
+    theme,
+    light: declarations(css, ":root"),
+    dark: declarations(css, ".dark"),
+  };
+}
+
 export async function registryJson() {
   const version = await authVersion();
   const exwave = (name: string) => `@exwave-nexus/${name}@^${version}`;
@@ -139,6 +176,31 @@ export async function registryJson() {
     files: filesFor([name]),
   }));
 
+  // The auth pages and the server wiring, without the (auth) layout: the
+  // block brings a plain one, the full app its own.
+  const nextWiring: RegistryFile[] = [
+    ...NEXT_PAGES.map((page) => ({
+      path: `${NEXT}app/(auth)/${page}/page.tsx`,
+      type: "registry:page",
+      target: `app/(auth)/${page}/page.tsx`,
+    })),
+    {
+      path: `${NEXT}app/api/exwave/[...action]/route.ts`,
+      type: "registry:file",
+      target: "app/api/exwave/[...action]/route.ts",
+    },
+    {
+      path: `${NEXT}lib/exwave.ts`,
+      type: "registry:lib",
+      target: "@lib/exwave.ts",
+    },
+    { path: `${NEXT}proxy.ts`, type: "registry:file", target: "~/proxy.ts" },
+  ];
+  const nextEnv = {
+    NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY: "exw_pk_from_nexus",
+    EXWAVE_COOKIE_SECRET: "",
+  };
+
   items.push({
     name: "auth-nextjs",
     type: "registry:block",
@@ -149,32 +211,14 @@ export async function registryJson() {
     registryDependencies: uiFor(everything),
     files: [
       ...filesFor(everything),
-      ...NEXT_PAGES.map((page) => ({
-        path: `${NEXT}app/(auth)/${page}/page.tsx`,
-        type: "registry:page",
-        target: `app/(auth)/${page}/page.tsx`,
-      })),
+      ...nextWiring,
       {
         path: `${NEXT}app/(auth)/layout.tsx`,
         type: "registry:page",
         target: "app/(auth)/layout.tsx",
       },
-      {
-        path: `${NEXT}app/api/exwave/[...action]/route.ts`,
-        type: "registry:file",
-        target: "app/api/exwave/[...action]/route.ts",
-      },
-      {
-        path: `${NEXT}lib/exwave.ts`,
-        type: "registry:lib",
-        target: "@lib/exwave.ts",
-      },
-      { path: `${NEXT}proxy.ts`, type: "registry:file", target: "~/proxy.ts" },
     ],
-    envVars: {
-      NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY: "exw_pk_from_nexus",
-      EXWAVE_COOKIE_SECRET: "",
-    },
+    envVars: nextEnv,
     docs: "Set NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) and EXWAVE_COOKIE_SECRET (openssl rand -base64 32) in .env.local, then wrap app/layout.tsx's body in <ExwaveProvider initialState={await exwave.getAuthState()}> from @exwave-nexus/auth-nextjs/client. Guide: https://www.exwave.net/docs/auth/get-started/",
   });
 
@@ -189,6 +233,74 @@ export async function registryJson() {
     files: filesFor(everything),
     envVars: { VITE_EXWAVE_PUBLISHABLE_KEY: "exw_pk_from_nexus" },
     docs: "Set VITE_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) in .env.local, then wrap your app in <ExwaveProvider publishableKey={import.meta.env.VITE_EXWAVE_PUBLISHABLE_KEY} navigate={yourRouterNavigate}> from @exwave-nexus/auth-react, and give each form a route. Guide: https://www.exwave.net/docs/auth/get-started/",
+  });
+
+  const theme = await exwaveTheme();
+  const font = "@fontsource-variable/nunito-sans";
+
+  items.push({
+    name: "exwave-theme",
+    type: "registry:theme",
+    title: "Exwave theme",
+    description:
+      "Exwave's colors for light and dark, Nunito Sans, and success and warning colors, for any shadcn/ui app.",
+    dependencies: [font],
+    cssVars: theme,
+    docs: `Import "${font}" once, in app/layout.tsx (or your entry file), so the font loads.`,
+  });
+
+  const app: [string, string, string][] = [
+    ["app/layout.tsx", "registry:page", "app/layout.tsx"],
+    ["app/page.tsx", "registry:page", "app/page.tsx"],
+    ["app/account/page.tsx", "registry:page", "app/account/page.tsx"],
+    ["app/(auth)/layout.tsx", "registry:page", "app/(auth)/layout.tsx"],
+    [
+      "components/theme-provider.tsx",
+      "registry:component",
+      "@components/theme-provider.tsx",
+    ],
+    [
+      "components/exwave/backend-notice.tsx",
+      "registry:component",
+      "@components/exwave/backend-notice.tsx",
+    ],
+    ["lib/local-mock.ts", "registry:lib", "@lib/local-mock.ts"],
+  ];
+  items.push({
+    name: "exwave-app",
+    type: "registry:base",
+    title: "Exwave Auth app for Next.js",
+    description:
+      "A whole Next.js app with Exwave Auth on shadcn/ui, in Exwave's colors: the home page, every auth screen, the account page, the /api/exwave routes and the session proxy.",
+    config: {
+      style: "radix-nova",
+      iconLibrary: "lucide",
+      rsc: true,
+      tailwind: { baseColor: "neutral" },
+      registries: { "@exwave": "https://www.exwave.net/r/{name}.json" },
+    },
+    dependencies: [
+      ...npmFor(everything, [...auth, exwave("auth-nextjs")]),
+      font,
+      "next-themes",
+    ],
+    registryDependencies: [
+      ...new Set([...uiFor(everything), "alert", "avatar", "badge", "card"]),
+    ],
+    cssVars: theme,
+    files: [
+      ...filesFor(everything),
+      ...nextWiring,
+      ...app.map(([path, type, target]) => ({
+        path: `${APP}${path}`,
+        type,
+        target,
+      })),
+      { path: LOGO, type: "registry:file", target: "~/public/exwave.svg" },
+      { path: LOGO, type: "registry:file", target: "~/app/icon.svg" },
+    ],
+    envVars: nextEnv,
+    docs: "Set NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY (Nexus → Auth) and EXWAVE_COOKIE_SECRET (openssl rand -base64 32) in .env.local, then npm run dev. Guide: https://www.exwave.net/docs/auth/get-started/",
   });
 
   return {

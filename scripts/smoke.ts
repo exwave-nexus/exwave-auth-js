@@ -1,11 +1,12 @@
 // Uses the packages the way a developer would, from the tarballs a release
 // would publish: npm-installed into new apps, outside this workspace.
 //
-//   1. create-exwave makes both templates; they install, typecheck and build.
+//   1. create-exwave makes every template; they install, typecheck and build.
 //   2. The Next.js app signs in against the mock, through its own routes.
 //   3. The core installs and signs in under Node without React or Next.js.
-//   4. The registry's auth-nextjs block goes into a fresh shadcn app, which
-//      typechecks and builds. (Skip with --no-registry.)
+//   4. The registry's auth-nextjs block goes into a fresh shadcn app, and
+//      `shadcn create` makes a new app from exwave-app; both typecheck and
+//      build. (Skip with --no-registry.)
 //
 //   bun scripts/smoke.ts [--no-registry] [--only-registry] [--keep]
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
@@ -102,7 +103,7 @@ async function pack(): Promise<Record<string, string>> {
 async function templates(tarballs: Record<string, string>) {
   const create = join(repo, "packages/create/publish/dist/index.js");
   const env = { EXWAVE_CREATE_TARBALLS: JSON.stringify(tarballs) };
-  for (const template of ["next", "vite"]) {
+  for (const template of ["next", "vite", "next-shadcn"]) {
     step(
       `create-exwave --template ${template}, then install, typecheck, build`,
     );
@@ -114,7 +115,7 @@ async function templates(tarballs: Record<string, string>) {
       env,
     );
     run("npm", ["install", "--no-audit", "--no-fund"], app);
-    if (template === "next") {
+    if (template !== "vite") {
       run("npx", ["next", "typegen"], app);
       run("npx", ["tsc", "--noEmit"], app);
       run("npx", ["next", "build"], app);
@@ -208,18 +209,23 @@ console.log("  signed in as", session.user.username);
   run("node", ["check.mjs"], dir);
 }
 
+/** A built registry item, saved locally with our packages from the tarballs. */
+async function localItem(name: string, tarballs: Record<string, string>) {
+  const item = JSON.parse(
+    await readFile(join(repo, `registry/public/r/${name}.json`), "utf8"),
+  );
+  item.dependencies = item.dependencies.map((dep: string) => {
+    const pkg = dep.slice(0, dep.lastIndexOf("@"));
+    return tarballs[pkg] ? `${pkg}@file:${tarballs[pkg]}` : dep;
+  });
+  const local = join(work, `${name}.json`);
+  await writeFile(local, JSON.stringify(item));
+  return local;
+}
+
 async function registry(tarballs: Record<string, string>) {
   step("The auth-nextjs block in a fresh shadcn app");
-  const block = JSON.parse(
-    await readFile(join(repo, "registry/public/r/auth-nextjs.json"), "utf8"),
-  );
-  // Our packages from the tarballs, as the release would publish them.
-  block.dependencies = block.dependencies.map((dep: string) => {
-    const name = dep.slice(0, dep.lastIndexOf("@"));
-    return tarballs[name] ? `${name}@file:${tarballs[name]}` : dep;
-  });
-  const local = join(work, "auth-nextjs.json");
-  await writeFile(local, JSON.stringify(block));
+  const local = await localItem("auth-nextjs", tarballs);
   run(
     "npx",
     [
@@ -273,6 +279,43 @@ async function registry(tarballs: Record<string, string>) {
   run("npx", ["next", "build"], app);
 }
 
+async function registryApp(tarballs: Record<string, string>) {
+  step("shadcn create: a new Next.js app from exwave-app");
+  const local = await localItem("exwave-app", tarballs);
+  run(
+    "npx",
+    [
+      "-y",
+      SHADCN,
+      "create",
+      "-t",
+      "next",
+      "-n",
+      "shadcn-exwave-app",
+      local,
+      "-y",
+      "--no-monorepo",
+    ],
+    work,
+  );
+  const app = join(work, "shadcn-exwave-app");
+  const source = (path: string) =>
+    readFile(join(repo, "registry/next-app", path), "utf8");
+  for (const file of ["app/page.tsx", "app/layout.tsx"])
+    check(
+      (await readFile(join(app, file), "utf8")) === (await source(file)),
+      `${file} is the app's, not the starter's`,
+    );
+  check(
+    (await readFile(join(app, "app/globals.css"), "utf8")).includes(
+      "--primary: #006fa7",
+    ),
+    "app/globals.css has Exwave's colors",
+  );
+  run("npx", ["tsc", "--noEmit"], app);
+  run("npx", ["next", "build"], app);
+}
+
 try {
   const tarballs = await pack();
   if (!flags.has("--only-registry")) {
@@ -280,7 +323,10 @@ try {
     await nextAgainstMock();
     await coreWithoutReact(tarballs);
   }
-  if (!flags.has("--no-registry")) await registry(tarballs);
+  if (!flags.has("--no-registry")) {
+    await registry(tarballs);
+    await registryApp(tarballs);
+  }
   console.log("\n✓ smoke passed");
 } finally {
   for (const child of children) child.kill();

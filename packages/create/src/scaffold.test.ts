@@ -34,57 +34,62 @@ async function files(dir: string, prefix = ""): Promise<string[]> {
   return out;
 }
 
-describe.each(["next", "vite"] as const)("the %s template", (template) => {
-  test("becomes the user's app, with their key", async () => {
-    const dir = join(work, `My ${template} App`);
-    const app = await scaffold({
-      dir,
-      template,
-      key: KEY,
-      version: "9.9.9",
-      templatesDir,
+describe.each(["next", "vite", "next-shadcn"] as const)(
+  "the %s template",
+  (template) => {
+    test("becomes the user's app, with their key", async () => {
+      const dir = join(work, `My ${template} App`);
+      const app = await scaffold({
+        dir,
+        template,
+        key: KEY,
+        version: "9.9.9",
+        templatesDir,
+      });
+      const list = await files(dir);
+      expect(list).toContain(".gitignore");
+      expect(list.some((path) => /(^|\/)_/.test(path))).toBe(false);
+      expect(list.some((path) => path.includes("node_modules"))).toBe(false);
+      expect(list.some((path) => path.includes(".next/"))).toBe(false);
+      expect(list).not.toContain(".env.development");
+
+      const manifest = JSON.parse(
+        await readFile(join(dir, "package.json"), "utf8"),
+      );
+      expect(manifest.name).toBe(`my-${template}-app`);
+      expect(manifest.dependencies["@exwave-nexus/auth"]).toBe("9.9.9");
+      expect(JSON.stringify(manifest)).not.toContain("workspace:");
+      expect(manifest.scripts.mock).toBeUndefined();
+      expect(app.usesMock).toBe(false);
+
+      const env = await readFile(join(dir, ".env.local"), "utf8");
+      expect(env).toContain(`=${KEY}\n`);
+      if (template !== "vite")
+        expect(env).toMatch(/\nEXWAVE_COOKIE_SECRET=[A-Za-z0-9_-]{43}\n/);
+      else expect(env).not.toContain("EXWAVE_COOKIE_SECRET");
     });
-    const list = await files(dir);
-    expect(list).toContain(".gitignore");
-    expect(list.some((path) => /(^|\/)_/.test(path))).toBe(false);
-    expect(list.some((path) => path.includes("node_modules"))).toBe(false);
-    expect(list.some((path) => path.includes(".next/"))).toBe(false);
-    expect(list).not.toContain(".env.development");
 
-    const manifest = JSON.parse(
-      await readFile(join(dir, "package.json"), "utf8"),
-    );
-    expect(manifest.name).toBe(`my-${template}-app`);
-    expect(manifest.dependencies["@exwave-nexus/auth"]).toBe("9.9.9");
-    expect(JSON.stringify(manifest)).not.toContain("workspace:");
-    expect(manifest.scripts.mock).toBeUndefined();
-    expect(app.usesMock).toBe(false);
-
-    const env = await readFile(join(dir, ".env.local"), "utf8");
-    expect(env).toContain(`=${KEY}\n`);
-    if (template === "next")
-      expect(env).toMatch(/\nEXWAVE_COOKIE_SECRET=[A-Za-z0-9_-]{43}\n/);
-    else expect(env).not.toContain("EXWAVE_COOKIE_SECRET");
-  });
-
-  test("without a key, wires the local mock", async () => {
-    const dir = join(work, `${template}-mock`);
-    const app = await scaffold({
-      dir,
-      template,
-      key: null,
-      version: "9.9.9",
-      templatesDir,
+    test("without a key, wires the local mock", async () => {
+      const dir = join(work, `${template}-mock`);
+      const app = await scaffold({
+        dir,
+        template,
+        key: null,
+        version: "9.9.9",
+        templatesDir,
+      });
+      const manifest = JSON.parse(
+        await readFile(join(dir, "package.json"), "utf8"),
+      );
+      expect(manifest.scripts.mock).toBe("exwave-auth-mock");
+      expect(manifest.devDependencies["@exwave-nexus/auth-mock"]).toBe("9.9.9");
+      expect(await readFile(join(dir, ".env.local"), "utf8")).toContain(
+        MOCK_KEY,
+      );
+      expect(app.usesMock).toBe(true);
     });
-    const manifest = JSON.parse(
-      await readFile(join(dir, "package.json"), "utf8"),
-    );
-    expect(manifest.scripts.mock).toBe("exwave-auth-mock");
-    expect(manifest.devDependencies["@exwave-nexus/auth-mock"]).toBe("9.9.9");
-    expect(await readFile(join(dir, ".env.local"), "utf8")).toContain(MOCK_KEY);
-    expect(app.usesMock).toBe(true);
-  });
-});
+  },
+);
 
 describe("scaffold", () => {
   test("refuses a directory that isn't empty", async () => {

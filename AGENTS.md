@@ -14,14 +14,17 @@ Bun workspaces:
 - `packages/auth-mock`: `@exwave-nexus/auth-mock`, the in-memory Auth API and
   its `exwave-auth-mock` CLI.
 - `packages/create`: `create-exwave` (`npm create exwave`), and
-  `templates/{next,vite}`: the apps it copies, which are also the dev
-  playgrounds and workspace members. They use no UI library: plain React and
-  one stylesheet. `shared/` holds what both copy (the auth screens, the
-  stylesheet, the logo).
+  `templates/{next,vite,next-shadcn}`: the apps it copies, which are also the
+  dev playgrounds and workspace members. `next` and `vite` use no UI library:
+  plain React and one stylesheet, and `shared/` holds what both copy (the auth
+  screens, the stylesheet, the logo). `next-shadcn` is the registry's
+  exwave-app, ready to run: all but its config comes from `registry/`.
 - `registry/`: the shadcn registry, for apps that use shadcn/ui.
   `registry/exwave/*` are the components, `registry/next/*` the pages and
-  wiring the auth-nextjs block adds, `registry/ui/*` shadcn's own primitives
-  (only to typecheck against: it's a private workspace), and
+  wiring the auth-nextjs block adds, `registry/next-app/*` the rest of the
+  full app (exwave-app), whose `app/globals.css` also holds the Exwave theme
+  that exwave-theme and exwave-app ship, `registry/ui/*` shadcn's own
+  primitives (only to typecheck against: it's a private workspace), and
   `registry/public/r/*` the built JSON the website serves.
 - `tests/`: the packages tested together (private, never published): the
   clients, the route handler, Next.js and React against the mock, through
@@ -50,16 +53,17 @@ Each client stays under 6 KB min+gz and `@exwave-nexus/auth-react` under
   must be a week old)
 - `bun run lint`, `bun run format` (Biome is the source of truth)
 - `bun run typecheck`, `bun test`, `bun run build` (packages and templates)
-- `bun run mock`, `bun run dev:next`, `bun run dev:vite`
-- `bun run templates:sync` after changing `packages/create/shared/*` (copies
-  it into both templates), `bun run templates:check`
+- `bun run mock`, `bun run dev:next`, `bun run dev:vite`,
+  `bun run dev:next-shadcn`
+- `bun run templates:sync` after changing `packages/create/shared/*` or
+  `registry/` (copies them into the templates), `bun run templates:check`
 - `bun run registry:build` after changing `registry/` (rebuilds
   `registry/public/r`)
 - `bun run stage` (builds everything, then writes what a release publishes to
   each `packages/*/publish/`)
 - `bun run smoke` (slow, needs the network: npm-installs the staged tarballs
-  into apps made by create-exwave and a fresh shadcn app, builds them, and
-  signs in against the mock)
+  into apps made by create-exwave, a fresh shadcn app and one `shadcn
+  create` makes from exwave-app, builds them, and signs in against the mock)
 - `bun run check-versions` (every package shares one version)
 
 ## Conventions
@@ -80,8 +84,9 @@ the core first: the other packages' declarations point at its `dist/` (`bun
 run build` runs the workspaces in dependency order).
 
 The screens come twice: plain in `packages/create/shared/components/exwave/`
-(the templates; edit there, then `bun run templates:sync`) and as shadcn
-components in `registry/exwave/`. Keep their logic in the hooks (fixes reach
+(the `next` and `vite` templates) and as shadcn components in
+`registry/exwave/` (the registry and `next-shadcn`). Edit them there, then
+`bun run templates:sync` and `bun run registry:build`. Keep their logic in the hooks (fixes reach
 people through npm) and the components to markup, and change both when the
 markup's behavior changes. The templates' screens may only use React,
 `@exwave-nexus/auth` and `@exwave-nexus/auth-react`, plus `@/lib/local-mock`,

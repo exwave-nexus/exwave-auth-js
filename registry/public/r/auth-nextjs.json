@@ -103,12 +103,6 @@
       "target": "app/(auth)/reset-password/page.tsx"
     },
     {
-      "path": "registry/next/app/(auth)/layout.tsx",
-      "content": "import type { ReactNode } from \"react\";\n\nexport default function AuthLayout({ children }: { children: ReactNode }) {\n  return <div className=\"mx-auto w-full max-w-sm\">{children}</div>;\n}\n",
-      "type": "registry:page",
-      "target": "app/(auth)/layout.tsx"
-    },
-    {
       "path": "registry/next/app/api/exwave/[...action]/route.ts",
       "content": "import { exwave } from \"@/lib/exwave\";\n\n// Sign-in, sign-up, email links, sign-out and the session, for the components.\nexport const { GET, POST } = exwave.routeHandlers();\n",
       "type": "registry:file",
@@ -122,9 +116,15 @@
     },
     {
       "path": "registry/next/proxy.ts",
-      "content": "import type { NextRequest } from \"next/server\";\nimport { exwave } from \"@/lib/exwave\";\n\n// Keeps sessions fresh before pages render, and clears ended ones.\nexport function proxy(request: NextRequest) {\n  return exwave.proxy(request);\n}\n\nexport const config = {\n  // The auth routes refresh on their own.\n  matcher: [\"/((?!api/exwave|_next/static|_next/image|favicon.ico).*)\"],\n};\n",
+      "content": "import type { NextRequest } from \"next/server\";\nimport { exwave } from \"@/lib/exwave\";\n\n// Keeps sessions fresh before pages render, and clears ended ones.\nexport function proxy(request: NextRequest) {\n  return exwave.proxy(request);\n}\n\nexport const config = {\n  // The auth routes refresh on their own; static files need no session.\n  matcher: [\n    \"/((?!api/exwave|_next/static|_next/image|favicon.ico|icon.svg|exwave.svg).*)\",\n  ],\n};\n",
       "type": "registry:file",
       "target": "~/proxy.ts"
+    },
+    {
+      "path": "registry/next/app/(auth)/layout.tsx",
+      "content": "import type { ReactNode } from \"react\";\n\nexport default function AuthLayout({ children }: { children: ReactNode }) {\n  return <div className=\"mx-auto w-full max-w-sm\">{children}</div>;\n}\n",
+      "type": "registry:page",
+      "target": "app/(auth)/layout.tsx"
     }
   ],
   "envVars": {

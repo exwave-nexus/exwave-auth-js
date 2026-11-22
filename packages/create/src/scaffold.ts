@@ -40,6 +40,7 @@ export interface ScaffoldOptions {
 
 const ENV_NAMES: Record<Template, string> = {
   next: "NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY",
+  "next-shadcn": "NEXT_PUBLIC_EXWAVE_PUBLISHABLE_KEY",
   vite: "VITE_EXWAVE_PUBLISHABLE_KEY",
 };
 
@@ -79,7 +80,7 @@ function envFile(template: Template, key: string | null): string {
       : "# The local mock (npm run mock). Put your key from Nexus → Auth here once you have one.",
     `${ENV_NAMES[template]}=${key ?? MOCK_KEY}`,
   ];
-  if (template === "next")
+  if (template !== "vite")
     lines.push(
       "",
       "# Seals the session cookie. Keep it secret; use another one in production.",
