@@ -1,6 +1,6 @@
 {
   "name": "@exwave-nexus/auth-nextjs",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Exwave Auth for the Next.js App Router: the session in an httpOnly cookie, read in Server Components, with route handlers, a proxy and the provider.",

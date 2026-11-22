@@ -4,8 +4,8 @@
   "title": "Sign in form",
   "description": "Email or username and password, with the reason the last session ended and a new verification link when needed.",
   "dependencies": [
-    "@exwave-nexus/auth@^0.3.0",
-    "@exwave-nexus/auth-react@^0.3.0"
+    "@exwave-nexus/auth@^0.3.1",
+    "@exwave-nexus/auth-react@^0.3.1"
   ],
   "registryDependencies": [
     "button",

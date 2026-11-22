@@ -1,6 +1,6 @@
 {
   "name": "@exwave-nexus/auth",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Exwave Auth for websites and apps: the browser and route clients, messages and the server side, for any framework or none.",

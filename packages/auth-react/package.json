@@ -1,6 +1,6 @@
 {
   "name": "@exwave-nexus/auth-react",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Exwave Auth for React: the provider, and hooks for sign-in, sign-up, email links, password reset and sign-out.",

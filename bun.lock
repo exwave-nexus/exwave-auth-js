@@ -14,7 +14,7 @@
     },
     "packages/auth": {
       "name": "@exwave-nexus/auth",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "dependencies": {
         "jose": "6.2.17",
       },
@@ -25,7 +25,7 @@
     },
     "packages/auth-mock": {
       "name": "@exwave-nexus/auth-mock",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "bin": {
         "exwave-auth-mock": "./src/cli.ts",
       },
@@ -40,7 +40,7 @@
     },
     "packages/auth-nextjs": {
       "name": "@exwave-nexus/auth-nextjs",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "dependencies": {
         "@exwave-nexus/auth": "workspace:*",
         "@exwave-nexus/auth-react": "workspace:*",
@@ -60,7 +60,7 @@
     },
     "packages/auth-react": {
       "name": "@exwave-nexus/auth-react",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "dependencies": {
         "@exwave-nexus/auth": "workspace:*",
       },
@@ -76,7 +76,7 @@
     },
     "packages/create": {
       "name": "create-exwave",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "bin": {
         "create-exwave": "./src/index.ts",
       },

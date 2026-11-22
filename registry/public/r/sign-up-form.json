@@ -4,8 +4,8 @@
   "title": "Sign up form",
   "description": "Name, email and password with the platform's rules ticked off as you type, then a check-your-email step with resend.",
   "dependencies": [
-    "@exwave-nexus/auth@^0.3.0",
-    "@exwave-nexus/auth-react@^0.3.0",
+    "@exwave-nexus/auth@^0.3.1",
+    "@exwave-nexus/auth-react@^0.3.1",
     "lucide-react"
   ],
   "registryDependencies": [

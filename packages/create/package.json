@@ -1,6 +1,6 @@
 {
   "name": "create-exwave",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Create a Next.js or Vite app with Exwave Auth: npm create exwave@latest",
