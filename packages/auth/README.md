@@ -103,6 +103,7 @@ in words.
 | `weak_password` | The password breaks the platform's rules, listed in `error.failedRules` |
 | `invalid_code` | The email link was already used or has expired |
 | `invalid_redirect_to` | The page's origin isn't the Site URL or a Redirect URL in Nexus |
+| `site_url_required` | An email had nowhere to link to: no `redirectTo`, and no Site URL in Nexus |
 | `rate_limited` | Too many attempts: retry after `error.retryAfter` seconds |
 
 ## Upgrading

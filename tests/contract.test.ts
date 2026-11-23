@@ -504,6 +504,26 @@ describe("choices exwave-auth PR #12 made (shared notes, player-rest-api-contrac
     );
   });
 
+  test("without a Site URL, email links need a redirect_to", async () => {
+    const { mock, fetch } = await setup({ siteUrl: null });
+    const auth = client(mock, fetch);
+    const signUp = (redirectTo?: string) =>
+      auth
+        .signUp({
+          email: `s${redirectTo?.length ?? 0}@example.com`,
+          password: "Password123!",
+          displayName: "S",
+          redirectTo,
+        })
+        .then(
+          () => "sent",
+          (e) => e.code,
+        );
+    expect(await signUp()).toBe("site_url_required");
+    expect(await signUp("http://localhost:5173/verify")).toBe("sent");
+    expect(mock.emails).toHaveLength(1);
+  });
+
   test("a successful sign-in clears the failure count", async () => {
     const { mock, fetch } = await setup();
     const auth = client(mock, fetch);

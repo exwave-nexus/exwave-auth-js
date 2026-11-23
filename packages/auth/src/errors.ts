@@ -15,6 +15,7 @@ export type ExwaveAuthErrorCode =
   | "invalid_refresh_token"
   | "invalid_request"
   | "invalid_redirect_to"
+  | "site_url_required"
   | "managed_auth_unavailable"
   | "unauthorized"
   | "unavailable"
