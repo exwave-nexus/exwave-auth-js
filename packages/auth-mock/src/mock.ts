@@ -86,7 +86,11 @@ export interface MockAuthOptions {
   patTtlSeconds?: number;
   signUpEnabled?: boolean;
   passwordPolicy?: Partial<MockPasswordPolicy>;
-  siteUrl?: string;
+  /**
+   * Where email links go without `redirect_to`. `null` for none: sign-up,
+   * resend and password reset then answer 409 `site_url_required`, like Auth.
+   */
+  siteUrl?: string | null;
   allowedRedirectOrigins?: string[];
   now?: () => number;
   log?: (line: string) => void;
@@ -150,7 +154,8 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
     signUpEnabled: options.signUpEnabled ?? true,
     passwordPolicy: { ...DEFAULT_PASSWORD_POLICY, ...options.passwordPolicy },
   };
-  const siteUrl = options.siteUrl ?? "http://localhost:5173/";
+  const siteUrl =
+    options.siteUrl === undefined ? "http://localhost:5173/" : options.siteUrl;
   const allowedOrigins = options.allowedRedirectOrigins ?? [
     "http://localhost:5173",
     "http://localhost:3000",
@@ -257,8 +262,10 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
       }
   }
 
-  function redirectTarget(value: unknown): URL | "invalid" {
-    if (value === undefined || value === null) return new URL(siteUrl);
+  // Auth never falls back to Zitadel's own pages, which players can't reach.
+  function redirectTarget(value: unknown): URL | "invalid" | "no_site_url" {
+    if (value === undefined || value === null)
+      return siteUrl ? new URL(siteUrl) : "no_site_url";
     if (typeof value !== "string") return "invalid";
     try {
       const url = new URL(value);
@@ -374,6 +381,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
         )
           return error("invalid_request", 400);
         if (target === "invalid") return error("invalid_redirect_to", 400);
+        if (target === "no_site_url") return error("site_url_required", 409);
         // Auth checks the policy before looking the player up.
         if (weakPassword(password, settings.passwordPolicy))
           return error("weak_password", 422);
@@ -408,6 +416,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
       case "POST players/verify-email/resend": {
         const target = redirectTarget(body.redirect_to);
         if (target === "invalid") return error("invalid_redirect_to", 400);
+        if (target === "no_site_url") return error("site_url_required", 409);
         const user = findByEmail(String(body.email ?? ""));
         if (user && !user.emailVerified)
           sendEmail(user, "verify_email", target);
@@ -494,6 +503,7 @@ export async function createMockAuth(options: MockAuthOptions = {}) {
       case "POST players/password-reset": {
         const target = redirectTarget(body.redirect_to);
         if (target === "invalid") return error("invalid_redirect_to", 400);
+        if (target === "no_site_url") return error("site_url_required", 409);
         const user = findByEmail(String(body.email ?? ""));
         if (user) sendEmail(user, "password_reset", target);
         return json({}, 202);

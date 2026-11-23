@@ -25,6 +25,8 @@ export const defaultMessages = {
   "error.network_error": "Can't reach the server. Check your connection.",
   "error.invalid_redirect_to":
     "This site's address isn't allowed yet: add it to Redirect URLs in Nexus → Auth → Settings.",
+  "error.site_url_required":
+    "Email links need a Site URL: set one in Nexus → Auth → Settings.",
   "error.managed_auth_unavailable":
     "Sign-in is unavailable right now. Try again in a moment.",
   "error.managed_auth_not_enabled":
